@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alakváltó</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #ffffff;
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 24px;
+  }
+
+  header { text-align: center; }
+  header h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 900; color: #222; }
+  header p  { font-size: clamp(0.85rem, 2.5vw, 1rem); color: #888; margin-top: 4px; font-weight: 700; }
+
+  .stage {
+    width: min(340px, 88vw);
+    height: min(340px, 88vw);
+    background: #f7f7f7;
+    border: 4px solid #e0e0e0;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shape-wrap {
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shape-wrap.pop { animation: pop 0.22s cubic-bezier(0.34, 1.6, 0.64, 1); }
+
+  @keyframes pop {
+    0%   { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  svg#shape { width: 100%; height: 100%; }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: min(340px, 88vw);
+  }
+
+  .slider-row { width: 100%; display: flex; align-items: center; gap: 12px; }
+
+  .slider-label { font-size: 0.85rem; font-weight: 700; color: #555; white-space: nowrap; }
+
+  input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 6px;
+    background: #ddd; border-radius: 10px; outline: none; cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px;
+    border-radius: 50%; background: #333; cursor: pointer; transition: transform 0.15s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  .speed-val { font-size: 0.85rem; font-weight: 700; color: #333; min-width: 44px; text-align: right; }
+
+  .btn-pause {
+    background: #222; border: none; color: #fff;
+    font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 900;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 10px 28px; border-radius: 50px; cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-pause:hover  { background: #444; }
+  .btn-pause:active { transform: scale(0.96); }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <h1>Alakváltó</h1>
+  <p>Melyik alak ez? Milyen színű?</p>
+</header>
+
+<div class="stage">
+  <div class="shape-wrap" id="shapeWrap">
+    <svg id="shape" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-row">
+    <span class="slider-label">Sebesség</span>
+    <input type="range" id="speedSlider" min="1" max="10" value="4" step="1">
+    <span class="speed-val" id="speedVal"></span>
+  </div>
+  <button class="btn-pause" id="pauseBtn">⏸ Szünet</button>
+</div>
+
+<script>
+  const shapes = [
+    { svg: (c) => `<circle cx="100" cy="100" r="82" fill="${c}"/>` },
+    { svg: (c) => `<rect x="16" y="16" width="168" height="168" rx="6" fill="${c}"/>` },
+    { svg: (c) => `<rect x="8" y="50" width="184" height="100" rx="6" fill="${c}"/>` },
+    { svg: (c) => `<polygon points="100,10 192,186 8,186" fill="${c}"/>` },
+    { svg: (c) => `<polygon points="100,8 180,52 180,148 100,192 20,148 20,52" fill="${c}"/>` },
+  ];
+
+  const colors = ['#FF3B30', '#FFCC00', '#007AFF', '#34C759'];
+
+  const speedLabels = ['0.2×','0.4×','0.6×','0.8×','1×','1.5×','2×','3×','5×','8×'];
+  const speedMs     = [5000, 3000, 2000, 1400, 1000, 700, 500, 350, 200, 100];
+
+  let current = { si: -1, ci: -1 };
+  let intervalId = null;
+  let paused = false;
+
+  const svgEl    = document.getElementById('shape');
+  const wrapEl   = document.getElementById('shapeWrap');
+  const slider   = document.getElementById('speedSlider');
+  const speedVal = document.getElementById('speedVal');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  function rand(max, exclude) {
+    let r;
+    do { r = Math.floor(Math.random() * max); } while (r === exclude);
+    return r;
+  }
+
+  function update() {
+    const si = rand(shapes.length, current.si);
+    const ci = rand(colors.length, current.ci);
+    current = { si, ci };
+
+    svgEl.innerHTML = shapes[si].svg(colors[ci]);
+
+    wrapEl.classList.remove('pop');
+    void wrapEl.offsetWidth;
+    wrapEl.classList.add('pop');
+  }
+
+  function getMs() { return speedMs[parseInt(slider.value) - 1]; }
+
+  function startInterval() {
+    clearInterval(intervalId);
+    intervalId = setInterval(update, getMs());
+  }
+
+  speedVal.textContent = speedLabels[parseInt(slider.value) - 1];
+  update();
+  startInterval();
+
+  slider.addEventListener('input', () => {
+    speedVal.textContent = speedLabels[parseInt(slider.value) - 1];
+    if (!paused) startInterval();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    if (paused) {
+      clearInterval(intervalId);
+      pauseBtn.textContent = '▶ Folytat';
+    } else {
+      update();
+      startInterval();
+      pauseBtn.textContent = '⏸ Szünet';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #arena {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    padding: 6px 6px 0 6px;
+  }
+  .panel {
+    flex: 1;
+    border-radius: 12px;
+    transition: background-color 0.08s ease;
+  }
+  #left  { background: #222; }
+  #right { background: #222; }
+  #controls {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 0 24px;
+  }
+  #speed-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 400px;
+    height: 10px;
+    border-radius: 5px;
+    background: #333;
+    outline: none;
+    cursor: pointer;
+  }
+  #speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #eee;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  #speed-slider::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #eee;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  #stop-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: #e74c3c;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 14px rgba(231,76,60,0.5);
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  }
+  #stop-btn:hover { transform: scale(1.08); }
+  #stop-btn:active { transform: scale(0.95); }
+  #stop-btn svg { width: 22px; height: 22px; fill: white; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+<div id="arena">
+  <div class="panel" id="left"></div>
+  <div class="panel" id="right"></div>
+</div>
+<div id="controls">
+  <input type="range" id="speed-slider" min="0" max="100" value="50">
+  <button id="stop-btn">
+    <svg id="btn-icon" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+  </button>
+</div>
+<script>
+  const COLORS = ['#2ecc71', '#ff4757', '#ffd32a', '#1e90ff'];
+  const left = document.getElementById('left');
+  const right = document.getElementById('right');
+  const slider = document.getElementById('speed-slider');
+  const stopBtn = document.getElementById('stop-btn');
+  const btnIcon = document.getElementById('btn-icon');
+
+  let leftPrev = null, rightPrev = null, timer = null, running = true;
+
+  const STOP_ICON = '<rect x="5" y="5" width="14" height="14" rx="2"/>';
+  const PLAY_ICON = '<polygon points="6,4 20,12 6,20"/>';
+
+  // val=1 → 10000ms (10s), val=100 → 80ms
+  function getInterval(val) {
+    return Math.round(10000 - (val - 1) * (9920 / 99));
+  }
+
+  function pickColor(exclude) {
+    const options = COLORS.filter(c => c !== exclude);
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  function flash() {
+    const lColor = pickColor(leftPrev);
+    const rColor = pickColor(rightPrev);
+    left.style.backgroundColor = lColor;
+    right.style.backgroundColor = rColor;
+    leftPrev = lColor;
+    rightPrev = rColor;
+  }
+
+  function doStop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    left.style.backgroundColor = '#222';
+    right.style.backgroundColor = '#222';
+    leftPrev = null; rightPrev = null;
+    running = false;
+    stopBtn.style.background = '#27ae60';
+    stopBtn.style.boxShadow = '0 0 14px rgba(39,174,96,0.5)';
+    btnIcon.innerHTML = PLAY_ICON;
+  }
+
+  function doPlay() {
+    running = true;
+    stopBtn.style.background = '#e74c3c';
+    stopBtn.style.boxShadow = '0 0 14px rgba(231,76,60,0.5)';
+    btnIcon.innerHTML = STOP_ICON;
+    startTimer();
+  }
+
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    const val = parseInt(slider.value);
+    if (val === 0) { doStop(); return; }
+    const interval = getInterval(val);
+    flash();
+    timer = setInterval(flash, interval);
+  }
+
+  stopBtn.addEventListener('click', () => {
+    if (running) doStop(); else doPlay();
+  });
+
+  slider.addEventListener('input', () => {
+    if (!running) doPlay();
+    else startTimer();
+  });
+
+  doPlay();
+</script>
+</body>
+</html>
