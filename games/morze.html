@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morze-játék</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FFF8EC;
+      --panel: #FFFFFF;
+      --panel2: #F0F6FF;
+      --border: #C8DCF0;
+      --accent: #2176AE;
+      --accent2: #E08C00;
+      --ti-color: #FF6B6B;
+      --ti-shadow: #c94b4b;
+      --taa-color: #4ECDC4;
+      --taa-shadow: #2da89f;
+      --ok: #06a355;
+      --fail: #e03030;
+      --text: #1a2a3a;
+      --muted: #6a8aaa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 1.2rem 1rem 2rem;
+    }
+
+    /* ── Start screen ── */
+    .start-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+    }
+    .start-box { text-align: center; padding: 2rem; }
+    .start-icon { font-size: 4rem; margin-bottom: 1rem; animation: pulse-icon 2s ease-in-out infinite; }
+    @keyframes pulse-icon { 0%,100%{opacity:1} 50%{opacity:0.6} }
+    .start-box h1 { font-size: 2.4rem; font-weight: 900; color: var(--accent); margin-bottom: 0.3rem; letter-spacing: 2px; }
+    .start-box p  { color: #6a8aaa; font-size: 1rem; font-weight: 700; margin-bottom: 2rem; }
+    .start-btn {
+      background: var(--accent); border: none; color: #ffffff;
+      font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 1.3rem;
+      padding: 0.8rem 2.5rem; border-radius: 50px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .start-btn:hover { opacity: 0.9; }
+
+    /* ── Header ── */
+    h1.main-title {
+      font-size: clamp(1.4rem,4vw,2rem); font-weight: 900;
+      color: var(--accent); letter-spacing: 3px; text-align: center;
+      margin-bottom: 0.15rem; font-family: 'Share Tech Mono', monospace;
+    }
+    .main-sub { font-size: 0.85rem; color: var(--muted); font-weight: 700; text-align: center; margin-bottom: 1rem; }
+
+    /* ── Settings ── */
+    .settings {
+      width: 100%; max-width: 680px;
+      background: var(--panel); border: 2px solid var(--border);
+      border-radius: 18px; padding: 1.1rem 1.4rem; margin-bottom: 1rem;
+    }
+    .settings-title { font-size: 0.78rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.9rem; }
+    .settings-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .setting-group { display: flex; flex-direction: column; gap: 0.4rem; min-width: 140px; }
+    .setting-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+    .chip-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .chip {
+      padding: 0.28rem 0.8rem; border-radius: 50px;
+      border: 2px solid var(--border); background: var(--panel2);
+      font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.82rem;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #0f1923; }
+    .chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+    /* level chips */
+    .chip.lvl1.active { background: #06c270; border-color: #04a85f; color: white; }
+    .chip.lvl2.active { background: #ffd166; border-color: #c9a030; color: #3a2a00; }
+    .chip.lvl3.active { background: #ff9f43; border-color: #c97820; color: white; }
+    .chip.lvl4.active { background: #ff6b6b; border-color: #c94b4b; color: white; }
+    .chip.lvl5.active { background: #a78bfa; border-color: #7c5cbf; color: white; }
+    #levelBtns .chip.active { background: #a78bfa; border-color: #7c5cbf; color: white; }
+
+    /* toggle */
+    .toggle-row { display: flex; align-items: center; gap: 0.7rem; }
+    .toggle {
+      width: 44px; height: 24px; border-radius: 12px;
+      background: var(--border); border: none; cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content:''; position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%; background: white;
+      transition: left 0.2s;
+    }
+    .toggle.on::after { left: 23px; }
+    .toggle-label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+
+    /* ── Mode tabs ── */
+    .mode-tabs {
+      width: 100%; max-width: 680px;
+      display: flex; gap: 0.5rem; margin-bottom: 1rem;
+    }
+    .mode-tab {
+      flex: 1; padding: 0.7rem 1rem; border-radius: 14px;
+      border: 2px solid var(--border); background: var(--panel);
+      font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.9rem;
+      color: var(--muted); cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .mode-tab.active { background: var(--panel2); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Game panel ── */
+    .game-panel {
+      width: 100%; max-width: 680px;
+      background: var(--panel); border: 2px solid var(--border);
+      border-radius: 18px; padding: 1.4rem;
+    }
+
+    /* ── Score ── */
+    .score-row { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.2rem; }
+    .score-box { text-align: center; }
+    .score-num { font-size: 2rem; font-weight: 900; font-family: 'Share Tech Mono', monospace; }
+    .score-num.ok   { color: var(--ok); }
+    .score-num.fail { color: var(--fail); }
+    .score-lbl { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Timer bar ── */
+    .timer-wrap { height: 8px; background: #DDE8F0; border-radius: 4px; margin-bottom: 1.2rem; overflow: hidden; }
+    .timer-bar  { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.1s linear, background 0.3s; }
+    .timer-bar.danger { background: var(--fail); }
+
+    /* ── Morse display ── */
+    .morse-display {
+      display: flex; gap: 0.5rem; justify-content: center; align-items: center;
+      min-height: 56px; margin-bottom: 1.2rem; flex-wrap: wrap;
+    }
+    .morse-sym {
+      font-family: 'Share Tech Mono', monospace; font-size: 2.2rem;
+      color: var(--accent2); transition: color 0.15s, text-shadow 0.15s;
+      letter-spacing: 4px;
+    }
+    .morse-sym.playing { color: var(--accent); }
+
+    /* ── Big letter display (mode 2) ── */
+    .big-letter {
+      font-family: 'Share Tech Mono', monospace; font-size: 5rem;
+      font-weight: 900; color: var(--accent); text-align: center;
+      margin-bottom: 0.5rem; letter-spacing: 6px;
+    }
+    .big-morse {
+      font-family: 'Share Tech Mono', monospace; font-size: 1.6rem;
+      color: var(--muted); text-align: center; letter-spacing: 8px; margin-bottom: 1.2rem;
+    }
+    .big-morse .sym-done { color: var(--accent2); }
+    .big-morse .sym-cur  { color: var(--accent); font-weight: 900; }
+
+    /* ── Phase message ── */
+    .phase-msg { text-align: center; font-size: 0.95rem; font-weight: 700; color: var(--muted); margin-bottom: 1rem; min-height: 1.4em; }
+
+    /* ── Choice buttons (mode 1) ── */
+    .choice-grid { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .choice-btn {
+      padding: 0.7rem 1.4rem; border-radius: 14px; border: 2px solid var(--border);
+      background: var(--panel2); font-family: 'Share Tech Mono', monospace;
+      font-weight: 700; font-size: 1.5rem; color: var(--text); cursor: pointer;
+      transition: all 0.15s; min-width: 70px; text-align: center;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .choice-btn.correct { background: rgba(6,194,112,0.2); border-color: var(--ok); color: var(--ok); }
+    .choice-btn.wrong   { background: rgba(255,71,87,0.2);  border-color: var(--fail); color: var(--fail); }
+    .choice-btn:disabled { cursor: not-allowed; }
+
+    /* ── Beat buttons (mode 2) ── */
+    .beat-buttons { display: flex; gap: clamp(1rem,4vw,3rem); justify-content: center; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+    .btn-wrap2 { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+    .beat-lbl { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+    .beat-btn {
+      border: none; cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 900;
+      color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.08s, box-shadow 0.08s;
+      -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .beat-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+    .beat-btn.pressed  { transform: scale(0.9) translateY(5px) !important; }
+    .btn-dit {
+      width: clamp(80px,15vw,110px); height: clamp(80px,15vw,110px); font-size: clamp(1.3rem,3vw,1.9rem);
+      background: var(--ti-color); box-shadow: 0 7px 0 var(--ti-shadow);
+    }
+    .btn-dit.pressed { box-shadow: 0 2px 0 var(--ti-shadow) !important; }
+    .btn-dah {
+      width: clamp(120px,24vw,170px); height: clamp(120px,24vw,170px); font-size: clamp(1.8rem,4vw,2.8rem);
+      background: var(--taa-color); box-shadow: 0 9px 0 var(--taa-shadow);
+    }
+    .btn-dah.pressed { box-shadow: 0 2px 0 var(--taa-shadow) !important; }
+
+    /* ── Input display (mode 2) ── */
+    .input-display {
+      display: flex; gap: 0.5rem; justify-content: center; align-items: center;
+      min-height: 48px; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .input-sym {
+      font-family: 'Share Tech Mono', monospace; font-size: 2rem;
+      letter-spacing: 4px; animation: popIn .18s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .input-sym.dit { color: var(--ti-color); }
+    .input-sym.dah { color: var(--taa-color); }
+    @keyframes popIn { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+    /* ── Action row ── */
+    .action-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+    .action-btn {
+      border: none; font-family: 'Nunito', sans-serif; font-weight: 900;
+      font-size: 0.95rem; padding: 0.5rem 1.3rem; border-radius: 50px; cursor: pointer; transition: all 0.12s;
+    }
+    .btn-play    { background: var(--accent2); color: #3a2a00; box-shadow: 0 4px 0 #c9a030; }
+    .btn-play:active { transform: translateY(3px); box-shadow: 0 1px 0 #c9a030; }
+    .btn-play:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-next    { background: var(--accent); color: #ffffff; box-shadow: 0 4px 0 #155a8a; }
+    .btn-next:active { transform: translateY(3px); box-shadow: 0 1px 0 #009bbf; }
+    .btn-submit  { background: var(--ok); color: white; box-shadow: 0 4px 0 #059954; }
+    .btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #059954; }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-clear2  { background: none; border: 2px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.95rem; padding: 0.5rem 1.1rem; border-radius: 50px; cursor: pointer; transition: all 0.2s; }
+    .btn-clear2:hover { border-color: var(--fail); color: var(--fail); }
+    .btn-clear2:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Result banner ── */
+    .result-banner { display: none; margin-top: 1rem; padding: 0.75rem 1.4rem; border-radius: 14px; font-size: 1.1rem; font-weight: 900; text-align: center; animation: popIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+    .result-banner.show { display: block; }
+    .result-banner.ok   { background: rgba(6,194,112,0.15); color: var(--ok); border: 2px solid var(--ok); }
+    .result-banner.fail { background: rgba(255,71,87,0.15);  color: var(--fail); border: 2px solid var(--fail); }
+
+    /* ── Reference card ── */
+    .ref-toggle { text-align: center; margin-top: 0.8rem; }
+    .ref-toggle-btn {
+      background: none; border: 2px solid var(--border); color: var(--muted);
+      font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.82rem;
+      padding: 0.3rem 1rem; border-radius: 50px; cursor: pointer; transition: all 0.2s;
+    }
+    .ref-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .ref-card {
+      display: none; margin-top: 0.8rem;
+      background: var(--panel2); border: 2px solid var(--border); border-radius: 14px;
+      padding: 1rem; max-width: 680px; width: 100%;
+    }
+    .ref-card.show { display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem; justify-content: center; }
+    .ref-item {
+      font-family: 'Share Tech Mono', monospace; font-size: 0.82rem;
+      color: var(--muted); min-width: 80px;
+    }
+    .ref-item span { color: var(--accent2); }
+
+    /* ── Ripple ── */
+    .ripple { position: fixed; border-radius: 50%; pointer-events: none; animation: rippleOut .6s ease-out forwards; z-index: 10; }
+    @keyframes rippleOut { 0%{transform:translate(-50%,-50%) scale(0);opacity:.5} 100%{transform:translate(-50%,-50%) scale(8);opacity:0} }
+  </style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<!-- Start -->
+<div id="startScreen" class="start-screen">
+  <div class="start-box">
+    <div class="start-icon">📡</div>
+    <h1>MORZE</h1>
+    <p>Tanuld meg a morze-jeleket játszva!</p>
+    <button id="startBtn" class="start-btn">▶ Kezdjük!</button>
+  </div>
+</div>
+
+<div id="mainApp" style="display:none; width:100%; max-width:680px;">
+
+  <h1 class="main-title">— MORZE —</h1>
+  <p class="main-sub">Ritmusalapú morze-tanuló</p>
+
+  <!-- Settings toggle button -->
+  <div style="text-align:center; margin-bottom:0.8rem;">
+    <button id="settingsToggleBtn" style="background:none; border:2px solid var(--border); color:var(--muted); font-family:'Nunito',sans-serif; font-weight:700; font-size:0.9rem; padding:0.4rem 1.2rem; border-radius:50px; cursor:pointer; transition:all 0.2s;">⚙ Beállítások</button>
+  </div>
+
+  <!-- Settings panel (hidden by default) -->
+  <div class="settings" id="settingsPanel" style="display:none">
+    <div class="settings-title">⚙ Beállítások</div>
+    <div class="settings-grid">
+
+      <div class="setting-group" style="width:100%">
+        <span class="setting-label">Szint (betűkészlet) — aktuális: <span id="levelInfo">1. szint: E, T</span></span>
+        <div class="chip-row" id="levelBtns" style="flex-wrap:wrap; gap:0.3rem; margin-top:0.3rem;">
+          <!-- generated by JS -->
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <span class="setting-label">Választógombok száma</span>
+        <div class="chip-row" id="choiceBtns">
+          <button class="chip" data-ch="2">2</button>
+          <button class="chip active" data-ch="3">3</button>
+          <button class="chip" data-ch="4">4</button>
+          <button class="chip" data-ch="6">6</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <span class="setting-label">Időkorlát</span>
+        <div class="toggle-row">
+          <button class="toggle" id="timerToggle"></button>
+          <span class="toggle-label" id="timerLabel">Ki</span>
+        </div>
+        <div class="chip-row" id="timerBtns" style="display:none; margin-top:0.3rem;">
+          <button class="chip" data-sec="5">5 mp</button>
+          <button class="chip active" data-sec="10">10 mp</button>
+          <button class="chip" data-sec="15">15 mp</button>
+          <button class="chip" data-sec="20">20 mp</button>
+          <button class="chip" data-sec="30">30 mp</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab1">📻 Melyik betű?</button>
+    <button class="mode-tab"        id="tab2">⌨️ Add meg a ritmust!</button>
+  </div>
+
+  <!-- Game panel -->
+  <div class="game-panel">
+
+    <div class="score-row">
+      <div class="score-box"><div class="score-num ok"   id="scoreOk">0</div><div class="score-lbl">✓ Helyes</div></div>
+      <div class="score-box"><div id="progressLabel" style="font-size:1.1rem;font-weight:900;font-family:'Share Tech Mono',monospace;color:var(--muted);">0 / 10</div><div class="score-lbl">feladat</div></div>
+      <div class="score-box"><div class="score-num fail" id="scoreFail">0</div><div class="score-lbl">✗ Hibás</div></div>
+    </div>
+
+    <div class="timer-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+
+    <div class="phase-msg" id="phaseMsg">Nyomj a ▶ gombra a következő feladathoz!</div>
+
+    <!-- MODE 1: hear → choose letter -->
+    <div id="mode1UI">
+      <div class="morse-display" id="morseDisplay"></div>
+      <div class="choice-grid"   id="choiceGrid"></div>
+      <div class="action-row">
+        <button class="action-btn btn-play" id="btnPlay">▶ Lejátszás</button>
+        <button class="action-btn btn-next" id="btnNext">⟶ Következő</button>
+      </div>
+    </div>
+
+    <!-- MODE 2: see letter → tap rhythm -->
+    <div id="mode2UI" style="display:none">
+      <div class="big-letter"   id="bigLetter"></div>
+      <div class="big-morse"    id="bigMorse"></div>
+      <div class="input-display" id="inputDisplay"></div>
+      <div class="beat-buttons">
+        <div class="btn-wrap2">
+          <span class="beat-lbl">rövid (di)</span>
+          <button class="beat-btn btn-dit" id="btnDit" disabled>·</button>
+        </div>
+        <div class="btn-wrap2">
+          <span class="beat-lbl">hosszú (dá)</span>
+          <button class="beat-btn btn-dah" id="btnDah" disabled>−</button>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="action-btn btn-submit"  id="btnSubmit" disabled>🔍 Ellenőrzés</button>
+        <button class="action-btn btn-clear2"  id="btnClear2" disabled>✕ Törlés</button>
+        <button class="action-btn btn-next"    id="btnNext2">⟶ Következő</button>
+      </div>
+    </div>
+
+    <div class="result-banner" id="resultBanner"></div>
+  </div>
+
+  <!-- Reference card -->
+  <div class="ref-toggle">
+    <button class="ref-toggle-btn" id="refToggleBtn">📋 Morze-táblázat</button>
+  </div>
+  <div class="ref-card" id="refCard"></div>
+
+</div>
+
+<script>
+// ── Morse table (difficulty-ordered) ────────────────────────────────────
+const MORSE_ALL = [
+  // Lvl 1
+  {l:'E', m:'.'}, {l:'T', m:'-'},
+  // Lvl 2
+  {l:'I', m:'..'}, {l:'A', m:'.-'},
+  // Lvl 3
+  {l:'S', m:'...'}, {l:'N', m:'-.'},
+  // Lvl 4
+  {l:'M', m:'--'}, {l:'O', m:'---'},
+  // Lvl 5 (rest)
+  {l:'R', m:'.-.'}, {l:'U', m:'..-'}, {l:'K', m:'-.-'}, {l:'D', m:'-..'},{l:'W', m:'.--'},
+  {l:'G', m:'--.'}, {l:'H', m:'.…'}, {l:'V', m:'...-'}, {l:'F', m:'..-.'},
+  {l:'L', m:'.-..'}, {l:'P', m:'.--.'}, {l:'J', m:'.---'}, {l:'B', m:'-...'},
+  {l:'X', m:'-..-'}, {l:'C', m:'-.-.'}, {l:'Y', m:'-.--'}, {l:'Z', m:'--..'},
+  {l:'Q', m:'--.-'},
+];
+// Fix H
+MORSE_ALL.find(x=>x.l==='H').m = '....';
+
+// ── Audio ─────────────────────────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let ctx=null, comp=null, mGain=null;
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  ctx = new AudioCtx();
+  ctx.resume().then(() => {
+    const buf = ctx.createBuffer(1,1,ctx.sampleRate);
+    const src = ctx.createBufferSource(); src.buffer=buf; src.connect(ctx.destination); src.start(0);
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    initGame();
+  });
+});
+
+function setupChain() {
+  comp = ctx.createDynamicsCompressor();
+  comp.threshold.value=-6; comp.knee.value=3; comp.ratio.value=20;
+  comp.attack.value=0.001; comp.release.value=0.1;
+  mGain = ctx.createGain(); mGain.gain.value=1.3;
+  comp.connect(mGain); mGain.connect(ctx.destination);
+}
+
+function playTone(freq, dur, type='sine', vol=0.9, at=null) {
+  if(!ctx) return;
+  if(!comp) setupChain();
+  const osc=ctx.createOscillator(), g=ctx.createGain();
+  osc.connect(g); g.connect(comp); osc.type=type;
+  const t = at!==null ? at : ctx.currentTime;
+  osc.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol, t+0.008);
+  g.gain.setValueAtTime(vol, t+dur-0.01);
+  g.gain.linearRampToValueAtTime(0, t+dur);
+  osc.start(t); osc.stop(t+dur+0.02);
+}
+
+const DIT_DUR=0.12, DAH_DUR=0.36, SYM_GAP=0.10, CHAR_GAP=0.28, FREQ=650;
+
+function playMorse(mstr, highlightCb) {
+  let t = ctx.currentTime + 0.06;
+  const syms = mstr.split('');
+  syms.forEach((s,i) => {
+    const dur = s==='.' ? DIT_DUR : DAH_DUR;
+    playTone(FREQ, dur, 'sine', 0.9, t);
+    if(highlightCb) {
+      const delay = (t - ctx.currentTime)*1000;
+      setTimeout(()=>highlightCb(i, true), delay);
+      setTimeout(()=>highlightCb(i, false), delay+dur*1000);
+    }
+    t += dur + SYM_GAP;
+  });
+  return (t - ctx.currentTime) * 1000;
+}
+
+function playDit(x,y) { playTone(FREQ, DIT_DUR,'sine',0.9); spawnRipple(x,y,'rgba(255,107,107,0.45)'); }
+function playDah(x,y) { playTone(FREQ, DAH_DUR,'sine',0.9); spawnRipple(x,y,'rgba(78,205,196,0.45)'); }
+
+// ── Cumulative level sets: each level adds exactly 1 new letter ──
+// Order: start with simplest morse patterns, add one by one
+const LETTER_ORDER = [
+  'E','T','I','A','S','N','M','O',
+  'R','U','K','D','W','G','H','V',
+  'F','L','P','J','B','X','C','Y','Z','Q'
+];
+// Level k = first k+1 letters (level 1 = E only... but we start with E+T as level 1)
+// Level 1: E,T  Level 2: E,T,I  Level 3: E,T,I,A ... Level 25: all 26
+const LEVEL_SETS = [[]]; // index 0 unused
+// Level 1 = E+T (2 letters to start)
+LEVEL_SETS.push(['E','T']);
+// Levels 2..25: add one letter at a time
+for(let i=2; i<LETTER_ORDER.length; i++) {
+  LEVEL_SETS.push(LETTER_ORDER.slice(0, i+1));
+}
+// LEVEL_SETS[1]=['E','T'], [2]=['E','T','I'], ..., [25]=all 26
+
+// ── State ─────────────────────────────────────────────────────────────
+let level=1, numChoices=3, timerOn=false, timerSec=10;
+let activeSet=[], currentItem=null;
+let scoreOk=0, scoreFail=0;
+let mode=1; // 1 or 2
+let phase='idle'; // idle|question|answered
+let timerInterval=null, timerLeft=0;
+let studentInput=[];
+const QUESTIONS_PER_ROUND = 10;
+let questionCount=0;
+
+function getActiveSet() {
+  const idx = Math.min(level, LEVEL_SETS.length-1);
+  const letters = LEVEL_SETS[idx];
+  return MORSE_ALL.filter(x => letters.includes(x.l));
+}
+function getMaxLevel() { return LEVEL_SETS.length - 1; } // 25
+
+function updateProgress() {
+  document.getElementById('progressLabel').textContent = questionCount + ' / ' + QUESTIONS_PER_ROUND;
+}
+
+// ── Settings toggle ──────────────────────────────────────────────────
+document.getElementById('settingsToggleBtn').addEventListener('click', () => {
+  const panel = document.getElementById('settingsPanel');
+  const btn = document.getElementById('settingsToggleBtn');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '✕ Bezárás' : '⚙ Beállítások';
+  btn.style.borderColor = open ? 'var(--accent)' : 'var(--border)';
+  btn.style.color = open ? 'var(--accent)' : 'var(--muted)';
+});
+
+// ── Settings wiring ──────────────────────────────────────────────────
+document.getElementById('levelBtns').addEventListener('click', e => {
+  const b=e.target.closest('[data-lvl]'); if(!b) return;
+  document.querySelectorAll('[data-lvl]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); level=parseInt(b.dataset.lvl);
+  updateLevelInfo(); resetGame(); buildRefCard();
+});
+document.getElementById('choiceBtns').addEventListener('click', e => {
+  const b=e.target.closest('[data-ch]'); if(!b) return;
+  document.querySelectorAll('[data-ch]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); numChoices=parseInt(b.dataset.ch);
+  resetGame();
+});
+const timerToggle=document.getElementById('timerToggle');
+timerToggle.addEventListener('click', () => {
+  timerOn=!timerOn;
+  timerToggle.classList.toggle('on', timerOn);
+  document.getElementById('timerLabel').textContent = timerOn ? 'Be' : 'Ki';
+  document.getElementById('timerBtns').style.display = timerOn ? 'flex' : 'none';
+  resetGame();
+});
+document.getElementById('timerBtns').addEventListener('click', e => {
+  const b=e.target.closest('[data-sec]'); if(!b) return;
+  document.querySelectorAll('[data-sec]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); timerSec=parseInt(b.dataset.sec);
+  resetGame();
+});
+
+// ── Mode tabs ────────────────────────────────────────────────────────
+document.getElementById('tab1').addEventListener('click', () => { mode=1; switchMode(); });
+document.getElementById('tab2').addEventListener('click', () => { mode=2; switchMode(); });
+
+function switchMode() {
+  document.getElementById('tab1').classList.toggle('active', mode===1);
+  document.getElementById('tab2').classList.toggle('active', mode===2);
+  document.getElementById('mode1UI').style.display = mode===1 ? 'block' : 'none';
+  document.getElementById('mode2UI').style.display = mode===2 ? 'block' : 'none';
+  resetGame();
+}
+
+// ── Game core ────────────────────────────────────────────────────────
+function initGame() {
+  buildLevelBtns();
+  buildRefCard();
+  resetGame();
+}
+
+function buildLevelBtns() {
+  const row = document.getElementById('levelBtns');
+  row.innerHTML = '';
+  const maxLvl = getMaxLevel();
+  for(let i=1; i<=maxLvl; i++) {
+    const letters = LEVEL_SETS[i];
+    const newLetter = i===1 ? 'E+T' : '+'+letters[letters.length-1];
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (i===1?' active':'');
+    btn.dataset.lvl = i;
+    btn.textContent = i + '. ' + newLetter;
+    row.appendChild(btn);
+  }
+  updateLevelInfo();
+}
+
+function updateLevelInfo() {
+  const letters = LEVEL_SETS[Math.min(level, getMaxLevel())];
+  document.getElementById('levelInfo').textContent =
+    level + '. szint: ' + letters.join(', ');
+}
+
+function resetGame() {
+  stopTimer();
+  phase='idle'; currentItem=null; studentInput=[];
+  scoreOk=0; scoreFail=0; questionCount=0;
+  document.getElementById('scoreOk').textContent='0';
+  document.getElementById('scoreFail').textContent='0';
+  document.getElementById('resultBanner').className='result-banner';
+  document.getElementById('timerBar').style.width='100%';
+  document.getElementById('timerBar').classList.remove('danger');
+  updateProgress();
+  setMsg('Nyomj a ▶ gombra a következő feladathoz!');
+  if(mode===1) {
+    document.getElementById('morseDisplay').innerHTML='';
+    document.getElementById('choiceGrid').innerHTML='';
+    document.getElementById('btnPlay').disabled=true;
+  } else {
+    document.getElementById('bigLetter').textContent='';
+    document.getElementById('bigMorse').innerHTML='';
+    document.getElementById('inputDisplay').innerHTML='';
+    document.getElementById('btnDit').disabled=true;
+    document.getElementById('btnDah').disabled=true;
+    document.getElementById('btnSubmit').disabled=true;
+    document.getElementById('btnClear2').disabled=true;
+  }
+}
+
+function showRoundEnd() {
+  stopTimer();
+  phase='roundend';
+  const pct = Math.round(scoreOk / QUESTIONS_PER_ROUND * 100);
+  const msg = pct === 100 ? '🏆 Tökéletes! Mind a 10 helyes!' :
+              pct >= 70  ? `👍 Jól ment! ${scoreOk}/10 helyes.` :
+                           `💪 Gyakorolj még! ${scoreOk}/10 helyes.`;
+  const banner = document.getElementById('resultBanner');
+  banner.textContent = msg + ' — Nyomj ▶-t az újrakezdéshez.';
+  banner.className = 'result-banner show ' + (pct >= 70 ? 'ok' : 'fail');
+  // reset for next round but keep score display
+  scoreOk=0; scoreFail=0; questionCount=0;
+  document.getElementById('scoreOk').textContent='0';
+  document.getElementById('scoreFail').textContent='0';
+  updateProgress();
+  if(mode===1) {
+    document.getElementById('choiceGrid').innerHTML='';
+    document.getElementById('btnPlay').disabled=true;
+  } else {
+    document.getElementById('bigLetter').textContent='';
+    document.getElementById('bigMorse').innerHTML='';
+    document.getElementById('inputDisplay').innerHTML='';
+    document.getElementById('btnDit').disabled=true;
+    document.getElementById('btnDah').disabled=true;
+    document.getElementById('btnSubmit').disabled=true;
+    document.getElementById('btnClear2').disabled=true;
+  }
+}
+
+function nextQuestion() {
+  if(questionCount >= QUESTIONS_PER_ROUND) { showRoundEnd(); return; }
+  stopTimer();
+  phase='question';
+  questionCount++;
+  updateProgress();
+  activeSet = getActiveSet();
+  currentItem = activeSet[Math.floor(Math.random()*activeSet.length)];
+  studentInput=[];
+  document.getElementById('resultBanner').className='result-banner';
+
+  if(mode===1) {
+    document.getElementById('morseDisplay').innerHTML='';
+    buildChoices();
+    setMsg('Hallgasd meg, majd válaszd ki a betűt! (' + questionCount + '/10)');
+    document.getElementById('btnPlay').disabled=false;
+    setTimeout(()=>{ if(phase==='question') doPlay(); }, 300);
+  } else {
+    document.getElementById('bigLetter').textContent=currentItem.l;
+    document.getElementById('bigMorse').innerHTML='';
+    document.getElementById('inputDisplay').innerHTML='';
+    document.getElementById('btnDit').disabled=false;
+    document.getElementById('btnDah').disabled=false;
+    document.getElementById('btnSubmit').disabled=false;
+    document.getElementById('btnClear2').disabled=false;
+    setMsg('Add meg a ' + currentItem.l + ' betű morze-jelét! (' + questionCount + '/10)');
+  }
+
+  if(timerOn) startTimer();
+}
+
+// ── Mode 1 ────────────────────────────────────────────────────────────
+function buildMorseDisplay(mstr, playing) {
+  const el=document.getElementById('morseDisplay');
+  el.innerHTML='';
+  mstr.split('').forEach((s,i) => {
+    const span=document.createElement('span');
+    span.className='morse-sym'; span.id='msym-'+i;
+    span.textContent = s==='.' ? '·' : '—';
+    el.appendChild(span);
+  });
+}
+
+function buildChoices() {
+  const grid=document.getElementById('choiceGrid');
+  grid.innerHTML='';
+  // Pool: all 26 letters available as decoys, excluding current
+  const fullPool = MORSE_ALL.filter(x=>x.l!==currentItem.l);
+  const shuffled = [...fullPool].sort(()=>Math.random()-0.5);
+  const decoyItems = shuffled.slice(0, numChoices-1);
+  const choices = [currentItem, ...decoyItems].sort(()=>Math.random()-0.5);
+  choices.forEach(item=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn'; btn.textContent=item.l;
+    btn.addEventListener('click', ()=>choicePick(btn, item.l));
+    grid.appendChild(btn);
+  });
+}
+
+function doPlay() {
+  document.getElementById('btnPlay').disabled=true;
+  const dur=playMorse(currentItem.m);
+  setTimeout(()=>{ if(phase==='question') document.getElementById('btnPlay').disabled=false; }, dur+100);
+}
+
+function choicePick(btn, letter) {
+  if(phase!=='question') return;
+  phase='answered'; stopTimer();
+  document.getElementById('timerBar').style.width='100%';
+  document.getElementById('timerBar').classList.remove('danger');
+  document.getElementById('btnPlay').disabled=true;
+  document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+
+  const ok=letter===currentItem.l;
+  btn.classList.add(ok?'correct':'wrong');
+  if(!ok) {
+    document.querySelectorAll('.choice-btn').forEach(b=>{
+      if(b.textContent===currentItem.l) b.classList.add('correct');
+    });
+  }
+  updateScore(ok);
+  showBanner(ok);
+  afterAnswer();
+}
+
+// ── Mode 2 ────────────────────────────────────────────────────────────
+function buildBigMorse(mstr, doneUpTo) {
+  const el=document.getElementById('bigMorse');
+  el.innerHTML='';
+  mstr.split('').forEach((s,i)=>{
+    const span=document.createElement('span');
+    const sym = s==='.' ? '·' : '—';
+    if(i<doneUpTo) { span.className='sym-done'; span.textContent=sym; }
+    else if(i===doneUpTo) { span.className='sym-cur'; span.textContent=sym; }
+    else { span.style.color='var(--muted)'; span.textContent=sym; }
+    el.appendChild(span);
+    if(i<mstr.length-1) { const sp=document.createElement('span'); sp.textContent=' '; el.appendChild(sp); }
+  });
+}
+
+function studentTap(type, x, y) {
+  if(phase!=='question') return;
+  studentInput.push(type);
+  const sym=document.createElement('span');
+  sym.className='input-sym '+(type==='dit'?'dit':'dah');
+  sym.textContent=type==='dit'?'·':'—';
+  document.getElementById('inputDisplay').appendChild(sym);
+  if(type==='dit') playDit(x,y); else playDah(x,y);
+  pulse(type==='dit'?document.getElementById('btnDit'):document.getElementById('btnDah'));
+}
+
+document.getElementById('btnDit').addEventListener('pointerdown', e=>{
+  e.preventDefault(); const r=e.target.getBoundingClientRect();
+  studentTap('dit', r.left+r.width/2, r.top+r.height/2);
+});
+document.getElementById('btnDah').addEventListener('pointerdown', e=>{
+  e.preventDefault(); const r=e.target.getBoundingClientRect();
+  studentTap('dah', r.left+r.width/2, r.top+r.height/2);
+});
+
+document.getElementById('btnSubmit').addEventListener('click', ()=>{
+  if(phase!=='question'||studentInput.length===0) return;
+  phase='answered'; stopTimer();
+  document.getElementById('timerBar').style.width='100%';
+  document.getElementById('timerBar').classList.remove('danger');
+  document.getElementById('btnDit').disabled=true;
+  document.getElementById('btnDah').disabled=true;
+  document.getElementById('btnSubmit').disabled=true;
+  document.getElementById('btnClear2').disabled=true;
+
+  const typed=studentInput.map(s=>s==='dit'?'.':'-').join('');
+  const ok=typed===currentItem.m;
+  updateScore(ok);
+  afterAnswer();
+  showBanner(ok ? '🎉 Helyes!' : `❌ Nem! ${currentItem.l} = ${currentItem.m.split('').map(s=>s==='.'?'·':'—').join(' ')}`);
+
+  // Show correct morse
+  buildBigMorse(currentItem.m, currentItem.m.length);
+});
+
+document.getElementById('btnClear2').addEventListener('click', ()=>{
+  if(phase!=='question') return;
+  studentInput=[];
+  document.getElementById('inputDisplay').innerHTML='';
+});
+
+// ── Next buttons ──────────────────────────────────────────────────────
+document.getElementById('btnNext').addEventListener('click', nextQuestion);
+document.getElementById('btnNext2').addEventListener('click', nextQuestion);
+document.getElementById('btnPlay').addEventListener('click', doPlay);
+
+// ── Timer ─────────────────────────────────────────────────────────────
+function startTimer() {
+  timerLeft=timerSec;
+  const bar=document.getElementById('timerBar');
+  bar.style.width='100%'; bar.classList.remove('danger');
+  timerInterval=setInterval(()=>{
+    timerLeft-=0.1;
+    const pct=Math.max(0, timerLeft/timerSec*100);
+    bar.style.width=pct+'%';
+    if(pct<30) bar.classList.add('danger');
+    if(timerLeft<=0) {
+      clearInterval(timerInterval);
+      if(phase==='question') timeOut();
+    }
+  },100);
+}
+function stopTimer() { clearInterval(timerInterval); timerInterval=null; }
+function timeOut() {
+  phase='answered';
+  if(mode===1) {
+    document.querySelectorAll('.choice-btn').forEach(b=>{ b.disabled=true; if(b.textContent===currentItem.l) b.classList.add('correct'); });
+    document.getElementById('btnPlay').disabled=true;
+  } else {
+    document.getElementById('btnDit').disabled=true;
+    document.getElementById('btnDah').disabled=true;
+    document.getElementById('btnSubmit').disabled=true;
+    document.getElementById('btnClear2').disabled=true;
+    buildBigMorse(currentItem.m, currentItem.m.length);
+  }
+  scoreFail++; document.getElementById('scoreFail').textContent=scoreFail;
+  afterAnswer();
+  showBanner(`⏱ Lejárt! ${currentItem.l} = ${currentItem.m.split('').map(s=>s==='.'?'·':'—').join(' ')}`);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function updateScore(ok) {
+  if(ok) { scoreOk++;  document.getElementById('scoreOk').textContent=scoreOk; }
+  else   { scoreFail++; document.getElementById('scoreFail').textContent=scoreFail; }
+}
+function afterAnswer() {
+  if(questionCount >= QUESTIONS_PER_ROUND) {
+    setTimeout(()=>showRoundEnd(), 1400);
+  }
+}
+function showBanner(msgOrBool) {
+  const banner=document.getElementById('resultBanner');
+  if(typeof msgOrBool==='boolean') {
+    banner.textContent = msgOrBool ? '🎉 Helyes!' : `❌ Nem egyezik. ${currentItem.l} = ${currentItem.m.split('').map(s=>s==='.'?'·':'—').join(' ')}`;
+    banner.className='result-banner show '+(msgOrBool?'ok':'fail');
+  } else {
+    const ok=msgOrBool.startsWith('🎉');
+    banner.textContent=msgOrBool;
+    banner.className='result-banner show '+(ok?'ok':'fail');
+  }
+}
+function setMsg(t) { document.getElementById('phaseMsg').textContent=t; }
+
+function spawnRipple(x, y, color) {
+  const r=document.createElement('div'); r.className='ripple';
+  r.style.cssText=`left:${x}px;top:${y}px;width:70px;height:70px;background:${color};`;
+  document.body.appendChild(r); setTimeout(()=>r.remove(),700);
+}
+function pulse(el) { el.classList.add('pressed'); setTimeout(()=>el.classList.remove('pressed'),150); }
+
+// ── Reference card ────────────────────────────────────────────────────
+function buildRefCard() {
+  const card=document.getElementById('refCard');
+  const set=getActiveSet();
+  card.innerHTML='';
+  set.forEach(item=>{
+    const d=document.createElement('div'); d.className='ref-item';
+    d.innerHTML=`<b>${item.l}</b> <span>${item.m.split('').map(s=>s==='.'?'·':'—').join(' ')}</span>`;
+    card.appendChild(d);
+  });
+}
+document.getElementById('refToggleBtn').addEventListener('click', ()=>{
+  const c=document.getElementById('refCard');
+  c.classList.toggle('show');
+  document.getElementById('refToggleBtn').textContent = c.classList.contains('show') ? '✕ Bezárás' : '📋 Morze-táblázat';
+});
+</script>
+</body>
+</html>
