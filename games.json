@@ -1,0 +1,91 @@
+{
+  "categories": [
+    {
+      "id": "memoria",
+      "name": "Vizuális emlékezet",
+      "emoji": "🧠",
+      "color": "#7C3AED",
+      "games": [
+        {
+          "id": "memoriajatek",
+          "title": "Memóriajáték",
+          "subtitle": "Párosítsd össze az egyező kártyákat!",
+          "file": "games/memoriajatek.html",
+          "emoji": "🃏"
+        }
+      ]
+    },
+    {
+      "id": "szinek",
+      "name": "Színek & formák",
+      "emoji": "🎨",
+      "color": "#DB2777",
+      "games": [
+        {
+          "id": "alakvalto",
+          "title": "Alakváltó",
+          "subtitle": "Melyik alak ez? Milyen színű?",
+          "file": "games/alakvalto.html",
+          "emoji": "🔷"
+        },
+        {
+          "id": "szinvillogas",
+          "title": "Színvillogás",
+          "subtitle": "Figyeld a villogó színeket!",
+          "file": "games/szinvillogas.html",
+          "emoji": "✨"
+        },
+        {
+          "id": "szinfejleszto",
+          "title": "Színfejlesztő",
+          "subtitle": "Két panel, két szín – reagálj gyorsan!",
+          "file": "games/szinfejleszto.html",
+          "emoji": "🎨"
+        },
+        {
+          "id": "szinfejleszto-kezek",
+          "title": "Színfejlesztő – kezek",
+          "subtitle": "Bal vagy jobb? Szín és kéz egyszerre!",
+          "file": "games/szinfejleszto_kezek.html",
+          "emoji": "🖐️"
+        }
+      ]
+    },
+    {
+      "id": "auditiv",
+      "name": "Auditív & ritmus",
+      "emoji": "🎵",
+      "color": "#059669",
+      "games": [
+        {
+          "id": "ritmus-hang",
+          "title": "Ritmusjáték",
+          "subtitle": "Érezd a rövid és hosszú szótagokat!",
+          "file": "games/ritmus-hang.html",
+          "emoji": "🥁"
+        },
+        {
+          "id": "ritmus-auto",
+          "title": "Ritmusjáték – Auto",
+          "subtitle": "Kövesd az automatikus ritmust!",
+          "file": "games/ritmus-auto.html",
+          "emoji": "🎶"
+        },
+        {
+          "id": "ritmus-ketszereplos",
+          "title": "Ritmusjáték – Kétszereplős",
+          "subtitle": "Játssz együtt valakivel!",
+          "file": "games/ritmus-ketszereplos.html",
+          "emoji": "👥"
+        },
+        {
+          "id": "morze",
+          "title": "Morse-oktató",
+          "subtitle": "Tanuld meg a Morse-kódot!",
+          "file": "games/morze.html",
+          "emoji": "📡"
+        }
+      ]
+    }
+  ]
+}
