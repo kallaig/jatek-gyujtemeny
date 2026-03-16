@@ -1,0 +1,139 @@
+
+<style>
+  #wrapHF { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; gap: 2rem; background: white; min-height: 380px; }
+  .titleHF { font-size: 20px; font-weight: 500; color: #333; }
+  .rects-rowHF { display: flex; gap: 0; border-radius: 16px; overflow: visible; }
+  .rect-wrapHF { position: relative; width: 110px; height: 220px; }
+  .rect-wrapHF:first-child .rectHF { border-radius: 16px 0 0 16px; }
+  .rect-wrapHF:last-child .rectHF { border-radius: 0 16px 16px 0; }
+  .rectHF { width: 110px; height: 220px; transition: background 0.35s ease; position: absolute; top: 0; left: 0; }
+  .hand-svgHF { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+  .controlsHF { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; max-width: 340px; }
+  .slider-rowHF { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .slider-rowHF label { font-size: 14px; color: #888; min-width: 60px; }
+  .slider-rowHF input[type=range] { flex: 1; }
+  .slider-rowHF span { font-size: 14px; font-weight: 500; min-width: 38px; text-align: right; color: #444; }
+  #stopBtnHF { padding: 10px 32px; font-size: 15px; border-radius: 999px; border: 2px solid #ccc; background: white; cursor: pointer; color: #444; font-weight: 500; transition: background 0.15s, border-color 0.15s; }
+  #stopBtnHF:hover { background: #f3f3f3; border-color: #aaa; }
+  #stopBtnHF.stopped { background: #f0fdf4; border-color: #4ade80; color: #166534; }
+</style>
+
+<div id="wrapHF">
+  <div class="titleHF">Kezek a téglalapokban</div>
+  <div class="rects-rowHF">
+    <div class="rect-wrapHF" id="leftWrapF">
+      <div class="rectHF" id="rectLeftF"></div>
+    </div>
+    <div class="rect-wrapHF" id="rightWrapF">
+      <div class="rectHF" id="rectRightF"></div>
+    </div>
+  </div>
+  <div class="controlsHF">
+    <div class="slider-rowHF">
+      <label>Sebesség</label>
+      <input type="range" id="speedHF" min="1" max="10" value="5" step="1">
+      <span id="speedOutHF">5</span>
+    </div>
+    <button id="stopBtnHF">⏸ Megállít</button>
+  </div>
+</div>
+
+<script>
+const colsHF = ['#e74c3c','#f1c40f','#3498db','#2ecc71'];
+const rectLeftF = document.getElementById('rectLeftF');
+const rectRightF = document.getElementById('rectRightF');
+const leftWrapF = document.getElementById('leftWrapF');
+const rightWrapF = document.getElementById('rightWrapF');
+const spHF = document.getElementById('speedHF');
+const spOutHF = document.getElementById('speedOutHF');
+const btnHF = document.getElementById('stopBtnHF');
+
+let idxLF = 0, idxRF = 2;
+let runningHF = true;
+let timerHF = null;
+let stepCountF = 0;
+let crossedF = false;
+
+function randOtherHF(last) {
+  let i; do { i = Math.floor(Math.random() * 4); } while (i === last); return i;
+}
+function getIntervalHF() {
+  return Math.round(2000 - (parseInt(spHF.value) - 1) * 190);
+}
+
+function handSVGF(flip) {
+  const mirror = flip ? 'scale(-1,1) translate(-90,0)' : '';
+  return `<svg width="90" height="100" viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
+  <g transform="${mirror}">
+    <path d="M20,58 Q16,82 24,90 Q45,98 66,90 Q74,82 70,58 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M70,58 Q72,46 75,38 Q78,30 75,26 Q71,22 68,28 Q65,35 64,58 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M58,58 Q59,42 61,30 Q63,20 60,16 Q56,12 53,16 Q50,22 51,58 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M46,58 Q45,40 45,27 Q45,17 42,13 Q38,9 35,14 Q32,20 34,58 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M34,58 Q31,44 30,33 Q29,24 26,22 Q22,20 21,27 Q19,35 25,58 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M20,64 Q12,61 9,54 Q6,46 11,42 Q16,38 20,47 Q21,54 21,62 Z" fill="white" stroke="white" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M20,58 Q16,82 24,90 Q45,98 66,90 Q74,82 70,58 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M70,58 Q72,46 75,38 Q78,30 75,26 Q71,22 68,28 Q65,35 64,58 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M58,58 Q59,42 61,30 Q63,20 60,16 Q56,12 53,16 Q50,22 51,58 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M46,58 Q45,40 45,27 Q45,17 42,13 Q38,9 35,14 Q32,20 34,58 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M34,58 Q31,44 30,33 Q29,24 26,22 Q22,20 21,27 Q19,35 25,58 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M20,64 Q12,61 9,54 Q6,46 11,42 Q16,38 20,47 Q21,54 21,62 Z" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="2.2" stroke-linejoin="round"/>
+  </g>
+</svg>`;
+}
+
+function renderHandsF() {
+  leftWrapF.querySelectorAll('.hand-svgHF').forEach(e => e.remove());
+  rightWrapF.querySelectorAll('.hand-svgHF').forEach(e => e.remove());
+
+  const leftFlip = crossedF ? false : true;
+  const rightFlip = crossedF ? true : false;
+
+  const lDiv = document.createElement('div');
+  lDiv.className = 'hand-svgHF';
+  lDiv.innerHTML = handSVGF(leftFlip);
+  leftWrapF.appendChild(lDiv);
+
+  const rDiv = document.createElement('div');
+  rDiv.className = 'hand-svgHF';
+  rDiv.innerHTML = handSVGF(rightFlip);
+  rightWrapF.appendChild(rDiv);
+}
+
+function tickHF() {
+  stepCountF++;
+  idxLF = randOtherHF(idxLF);
+  idxRF = randOtherHF(idxRF);
+  rectLeftF.style.background = colsHF[idxLF];
+  rectRightF.style.background = colsHF[idxRF];
+  crossedF = stepCountF > 10 && Math.random() < 0.4;
+  renderHandsF();
+}
+
+function startTimerHF() {
+  clearInterval(timerHF);
+  timerHF = setInterval(tickHF, getIntervalHF());
+}
+
+rectLeftF.style.background = colsHF[idxLF];
+rectRightF.style.background = colsHF[idxRF];
+renderHandsF();
+startTimerHF();
+
+spHF.addEventListener('input', () => {
+  spOutHF.textContent = spHF.value;
+  if (runningHF) startTimerHF();
+});
+
+btnHF.addEventListener('click', () => {
+  runningHF = !runningHF;
+  if (runningHF) {
+    startTimerHF();
+    btnHF.textContent = '⏸ Megállít';
+    btnHF.classList.remove('stopped');
+  } else {
+    clearInterval(timerHF);
+    btnHF.textContent = '▶ Indít';
+    btnHF.classList.add('stopped');
+  }
+});
+</script>
