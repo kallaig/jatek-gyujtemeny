@@ -36,13 +36,6 @@
           "emoji": "✨"
         },
         {
-          "id": "szinvillogas (2)",
-          "title": "Színvillogás2",
-          "subtitle": "Figyeld a villogó színeket!",
-          "file": "games/szinvillogas.html",
-          "emoji": "✨"
-        },
-        {
           "id": "szinfejleszto",
           "title": "Színfejlesztő",
           "subtitle": "Két panel, két szín – reagálj gyorsan!",
@@ -50,22 +43,8 @@
           "emoji": "🎨"
         },
         {
-          "id": "szinfejleszto (2)",
-          "title": "Színfejlesztő2",
-          "subtitle": "Két panel, két szín – reagálj gyorsan!",
-          "file": "games/szinfejleszto.html",
-          "emoji": "🎨"
-        },
-        {
           "id": "szinfejleszto-kezek",
           "title": "Színfejlesztő – kezek",
-          "subtitle": "Bal vagy jobb? Szín és kéz egyszerre!",
-          "file": "games/szinfejleszto_kezek.html",
-          "emoji": "🖐️"
-        },
-        {
-          "id": "szinfejleszto-kezek (2)",
-          "title": "Színfejlesztő – kezek2",
           "subtitle": "Bal vagy jobb? Szín és kéz egyszerre!",
           "file": "games/szinfejleszto_kezek.html",
           "emoji": "🖐️"
