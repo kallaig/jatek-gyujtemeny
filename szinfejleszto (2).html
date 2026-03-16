@@ -1,0 +1,81 @@
+
+<style>
+  #wrap3 { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; gap: 2rem; background: white; min-height: 360px; }
+  .rects-row3 { display: flex; gap: 0; align-items: center; border-radius: 16px; overflow: hidden; }
+  .rect3 { width: 110px; height: 200px; transition: background 0.35s ease; }
+  .controls3 { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; max-width: 340px; }
+  .slider-row3 { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .slider-row3 label { font-size: 14px; color: #888; min-width: 60px; }
+  .slider-row3 input[type=range] { flex: 1; }
+  .slider-row3 span { font-size: 14px; font-weight: 500; min-width: 38px; text-align: right; color: #444; }
+  #stopBtn3 { padding: 10px 32px; font-size: 15px; border-radius: 999px; border: 2px solid #ccc; background: white; cursor: pointer; color: #444; font-weight: 500; transition: background 0.15s, border-color 0.15s; }
+  #stopBtn3:hover { background: #f3f3f3; border-color: #aaa; }
+  #stopBtn3.stopped { background: #f0fdf4; border-color: #4ade80; color: #166534; }
+  .title3 { font-size: 20px; font-weight: 500; color: #333; }
+</style>
+<div id="wrap3">
+  <div class="title3">Két színváltó téglalap</div>
+  <div class="rects-row3">
+    <div class="rect3" id="rectA3"></div>
+    <div class="rect3" id="rectB3"></div>
+  </div>
+  <div class="controls3">
+    <div class="slider-row3">
+      <label>Sebesség</label>
+      <input type="range" id="speed3" min="1" max="10" value="5" step="1">
+      <span id="speedOut3">5</span>
+    </div>
+    <button id="stopBtn3">⏸ Megállít</button>
+  </div>
+</div>
+<script>
+  const cols3 = ['#e74c3c','#f1c40f','#3498db','#2ecc71'];
+  const rA3 = document.getElementById('rectA3');
+  const rB3 = document.getElementById('rectB3');
+  const sp3 = document.getElementById('speed3');
+  const spOut3 = document.getElementById('speedOut3');
+  const btn3 = document.getElementById('stopBtn3');
+
+  let idxA3 = 0, idxB3 = 2;
+  let running3 = true;
+  let timer3 = null;
+
+  function randOther3(last) {
+    let i; do { i = Math.floor(Math.random() * 4); } while (i === last); return i;
+  }
+  function getInterval3() {
+    return Math.round(2000 - (parseInt(sp3.value) - 1) * 190);
+  }
+  function tick3() {
+    idxA3 = randOther3(idxA3);
+    idxB3 = randOther3(idxB3);
+    rA3.style.background = cols3[idxA3];
+    rB3.style.background = cols3[idxB3];
+  }
+  function startTimer3() {
+    clearInterval(timer3);
+    timer3 = setInterval(tick3, getInterval3());
+  }
+
+  rA3.style.background = cols3[idxA3];
+  rB3.style.background = cols3[idxB3];
+  startTimer3();
+
+  sp3.addEventListener('input', () => {
+    spOut3.textContent = sp3.value;
+    if (running3) startTimer3();
+  });
+
+  btn3.addEventListener('click', () => {
+    running3 = !running3;
+    if (running3) {
+      startTimer3();
+      btn3.textContent = '⏸ Megállít';
+      btn3.classList.remove('stopped');
+    } else {
+      clearInterval(timer3);
+      btn3.textContent = '▶ Indít';
+      btn3.classList.add('stopped');
+    }
+  });
+</script>

@@ -1,0 +1,81 @@
+
+<style>
+  body { background: white; }
+  #wrap { display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; gap: 2rem; background: white; min-height: 320px; }
+  #square { width: 180px; height: 180px; border-radius: 18px; transition: background 0.3s ease; }
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; max-width: 340px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .slider-row label { font-size: 14px; color: #888; min-width: 60px; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-row span { font-size: 14px; font-weight: 500; min-width: 38px; text-align: right; color: #444; }
+  #stopBtn { padding: 10px 32px; font-size: 15px; border-radius: 999px; border: 2px solid #ccc; background: white; cursor: pointer; color: #444; font-weight: 500; transition: background 0.15s, border-color 0.15s; }
+  #stopBtn:hover { background: #f3f3f3; border-color: #aaa; }
+  #stopBtn.stopped { background: #f0fdf4; border-color: #4ade80; color: #166534; }
+  .title { font-size: 20px; font-weight: 500; color: #333; letter-spacing: 0.01em; }
+</style>
+<div id="wrap">
+  <div class="title">Színváltó négyzet</div>
+  <div id="square"></div>
+  <div class="controls">
+    <div class="slider-row">
+      <label>Sebesség</label>
+      <input type="range" id="speed" min="1" max="10" value="5" step="1">
+      <span id="speedOut">5</span>
+    </div>
+    <button id="stopBtn">⏸ Megállít</button>
+  </div>
+</div>
+<script>
+  const colors = ['#e74c3c','#f1c40f','#3498db','#2ecc71'];
+  const names  = ['piros','sárga','kék','zöld'];
+  const square = document.getElementById('square');
+  const speedSlider = document.getElementById('speed');
+  const speedOut = document.getElementById('speedOut');
+  const stopBtn = document.getElementById('stopBtn');
+
+  let current = 0;
+  let running = true;
+  let timer = null;
+
+  function randomOther(last) {
+    let idx;
+    do { idx = Math.floor(Math.random() * colors.length); } while (idx === last);
+    return idx;
+  }
+
+  function getInterval() {
+    const v = parseInt(speedSlider.value);
+    return Math.round(2000 - (v - 1) * 190);
+  }
+
+  function nextColor() {
+    current = randomOther(current);
+    square.style.background = colors[current];
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(nextColor, getInterval());
+  }
+
+  nextColor();
+  startTimer();
+
+  speedSlider.addEventListener('input', () => {
+    speedOut.textContent = speedSlider.value;
+    if (running) startTimer();
+  });
+
+  stopBtn.addEventListener('click', () => {
+    running = !running;
+    if (running) {
+      startTimer();
+      stopBtn.textContent = '⏸ Megállít';
+      stopBtn.classList.remove('stopped');
+    } else {
+      clearInterval(timer);
+      stopBtn.textContent = '▶ Indít';
+      stopBtn.classList.add('stopped');
+    }
+  });
+</script>
