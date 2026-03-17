@@ -12,7 +12,14 @@
           "subtitle": "Párosítsd össze az egyező kártyákat!",
           "file": "games/memoriajatek.html",
           "emoji": "🃏"
-        }
+        },
+        {
+  "id": "geometria-memoria",
+  "title": "Geometria memória",
+  "subtitle": "Párosítsd az alakokat emlékezetből!",
+  "file": "games/geometria_memoria.html",
+  "emoji": "🔺"
+}
       ]
     },
     {
