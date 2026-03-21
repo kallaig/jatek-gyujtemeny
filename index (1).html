@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 Játékgyűjtemény</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7C3AED">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Játékok">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF9F0;
+    --card-bg: #ffffff;
+    --shadow: rgba(0,0,0,0.10);
+    --radius: 20px;
+    --memoria: #7C3AED;
+    --memoria-light: #EDE9FE;
+    --szinek: #DB2777;
+    --szinek-light: #FCE7F3;
+    --auditiv: #059669;
+    --auditiv-light: #D1FAE5;
+    --figyelem: #DC2626;
+    --figyelem-light: #FEE2E2;
+    --logika: #0369A1;
+    --logika-light: #DBEAFE;
+    --teri: #0F766E;
+    --teri-light: #CCFBF1;
+    --text: #1a1a2e;
+    --muted: #7a7a8c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--text);
+  }
+
+  /* ── Header ───────────────────────────────────────── */
+  header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    position: relative;
+  }
+
+  .header-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #FFF0DC 0%, #FFE4F0 50%, #E8F5FF 100%);
+    z-index: 0;
+    border-radius: 0 0 40px 40px;
+  }
+
+  header > * { position: relative; z-index: 1; }
+
+  .logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.4rem, 8vw, 4rem);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #7C3AED, #DB2777, #059669);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .tagline {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 28px;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px var(--shadow);
+    color: var(--muted);
+  }
+
+  /* ── Main ─────────────────────────────────────────── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  /* ── Category block ───────────────────────────────── */
+  .category {
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .category:nth-child(1) { animation-delay: 0.05s; }
+  .category:nth-child(2) { animation-delay: 0.15s; }
+  .category:nth-child(3) { animation-delay: 0.25s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  .cat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+    color: white;
+  }
+
+  .cat-pill.memoria  { background: var(--memoria); }
+  .cat-pill.szinek   { background: var(--szinek); }
+  .cat-pill.auditiv  { background: var(--auditiv); }
+  .cat-pill.figyelem { background: var(--figyelem); }
+  .cat-pill.logika   { background: var(--logika); }
+  .cat-pill.teri     { background: var(--teri); }
+
+  .cat-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  /* ── Game grid ────────────────────────────────────── */
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  /* ── Game card ────────────────────────────────────── */
+  .game-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 22px 18px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 3px 14px var(--shadow);
+    border: 2.5px solid transparent;
+    transition: transform 0.18s cubic-bezier(0.34,1.4,0.64,1),
+                box-shadow 0.18s ease,
+                border-color 0.18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .game-card:hover, .game-card:focus-visible {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 30px var(--shadow);
+    outline: none;
+  }
+
+  .cat-memoria  .game-card::before  { background: var(--memoria); }
+  .cat-memoria  .game-card:hover    { border-color: var(--memoria); }
+  .cat-szinek   .game-card::before  { background: var(--szinek); }
+  .cat-szinek   .game-card:hover    { border-color: var(--szinek); }
+  .cat-auditiv  .game-card::before  { background: var(--auditiv); }
+  .cat-auditiv  .game-card:hover    { border-color: var(--auditiv); }
+  .cat-figyelem .game-card::before  { background: var(--figyelem); }
+  .cat-figyelem .game-card:hover    { border-color: var(--figyelem); }
+  .cat-logika   .game-card::before  { background: var(--logika); }
+  .cat-logika   .game-card:hover    { border-color: var(--logika); }
+  .cat-teri     .game-card::before  { background: var(--teri); }
+  .cat-teri     .game-card:hover    { border-color: var(--teri); }
+
+  .card-emoji {
+    font-size: 2.2rem;
+    line-height: 1;
+  }
+
+  .card-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.15rem;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .card-subtitle {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .card-arrow {
+    margin-top: auto;
+    font-size: 0.75rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .cat-memoria  .card-arrow { color: var(--memoria); }
+  .cat-szinek   .card-arrow { color: var(--szinek); }
+  .cat-auditiv  .card-arrow { color: var(--auditiv); }
+  .cat-figyelem .card-arrow { color: var(--figyelem); }
+  .cat-logika   .card-arrow { color: var(--logika); }
+  .cat-teri     .card-arrow { color: var(--teri); }
+
+  .game-card:hover .card-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── Footer ───────────────────────────────────────── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.8rem;
+    color: #bbb;
+    font-weight: 700;
+  }
+
+  /* ── Responsive ───────────────────────────────────── */
+  @media (max-width: 480px) {
+    .game-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .game-card {
+      padding: 16px 14px 14px;
+    }
+    .card-emoji { font-size: 1.8rem; }
+    .card-title { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-bg"></div>
+  <div class="logo">🎮 Játékgyűjtemény</div>
+  <p class="tagline">Válassz egy játékot és kezdjük!</p>
+  <div class="badge-row">
+    <span class="badge">🧠 Vizuális emlékezet</span>
+    <span class="badge">🎨 Színek &amp; formák</span>
+    <span class="badge">🎵 Auditív &amp; ritmus</span>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<footer>Bővítsd kedvedre — adj hozzá új fájlt és frissítsd a games.json-t ✨</footer>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+
+  fetch('games.json')
+    .then(r => r.json())
+    .then(data => render(data))
+    .catch(() => {
+      // Fallback: inline data if fetch fails (e.g. file:// protocol)
+      render(INLINE_DATA);
+    });
+
+  // ── Inline fallback (mirrors games.json) ──────────────
+  const INLINE_DATA = {
+    categories: [
+      {
+        id: "memoria", name: "Vizuális emlékezet", emoji: "🧠", color: "#7C3AED",
+        games: [
+          { id:"memoriajatek", title:"Memóriajáték", subtitle:"Párosítsd össze az egyező kártyákat!", file:"games/memoriajatek.html", emoji:"🃏" }
+        ]
+      },
+      {
+        id: "szinek", name: "Színek & formák", emoji: "🎨", color: "#DB2777",
+        games: [
+          { id:"alakvalto",          title:"Alakváltó",              subtitle:"Melyik alak ez? Milyen színű?",        file:"games/alakvalto.html",           emoji:"🔷" },
+          { id:"szinvillogas",       title:"Színvillogás",           subtitle:"Figyeld a villogó színeket!",          file:"games/szinvillogas.html",         emoji:"✨" },
+          { id:"szinfejleszto",      title:"Színfejlesztő",          subtitle:"Két panel, két szín – reagálj gyorsan!", file:"games/szinfejleszto.html",      emoji:"🎨" },
+          { id:"szinfejleszto-kezek",title:"Színfejlesztő – kezek", subtitle:"Bal vagy jobb? Szín és kéz egyszerre!", file:"games/szinfejleszto_kezek.html", emoji:"🖐️" }
+        ]
+      },
+      {
+        id: "auditiv", name: "Auditív & ritmus", emoji: "🎵", color: "#059669",
+        games: [
+          { id:"ritmus-hang",        title:"Ritmusjáték",             subtitle:"Érezd a rövid és hosszú szótagokat!", file:"games/ritmus-hang.html",          emoji:"🥁" },
+          { id:"ritmus-auto",        title:"Ritmusjáték – Auto",      subtitle:"Kövesd az automatikus ritmust!",      file:"games/ritmus-auto.html",          emoji:"🎶" },
+          { id:"ritmus-ketszereplos",title:"Ritmusjáték – Kétszereplős", subtitle:"Játssz együtt valakivel!",        file:"games/ritmus-ketszereplos.html",  emoji:"👥" },
+          { id:"morze",              title:"Morse-oktató",            subtitle:"Tanuld meg a Morse-kódot!",          file:"games/morze.html",                emoji:"📡" }
+        ]
+      }
+    ]
+  };
+
+  function render(data) {
+    const main = document.getElementById('main');
+    main.innerHTML = '';
+
+    data.categories.forEach(cat => {
+      const section = document.createElement('section');
+      section.className = `category cat-${cat.id}`;
+
+      section.innerHTML = `
+        <div class="cat-header">
+          <span class="cat-pill ${cat.id}">${cat.emoji} ${cat.name}</span>
+          <span class="cat-count">${cat.games.length} játék</span>
+        </div>
+        <div class="game-grid" id="grid-${cat.id}"></div>
+      `;
+
+      main.appendChild(section);
+
+      const grid = section.querySelector(`#grid-${cat.id}`);
+      cat.games.forEach(game => {
+        const card = document.createElement('a');
+        card.href = game.file;
+        card.className = 'game-card';
+        card.innerHTML = `
+          <div class="card-emoji">${game.emoji}</div>
+          <div class="card-title">${game.title}</div>
+          <div class="card-subtitle">${game.subtitle}</div>
+          <div class="card-arrow">Játék indítása →</div>
+        `;
+        grid.appendChild(card);
+      });
+    });
+  }
+</script>
+</body>
+</html>
