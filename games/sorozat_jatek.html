@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorozat Kirakós</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0fdf4;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 20px;
+    --red:    #ef4444;
+    --yellow: #facc15;
+    --green:  #22c55e;
+    --blue:   #3b82f6;
+    --red-light:    #fef2f2;
+    --yellow-light: #fefce8;
+    --green-light:  #f0fdf4;
+    --blue-light:   #eff6ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(250,204,21,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(59,130,246,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 60% 40%, rgba(34,197,94,0.07) 0%, transparent 50%);
+    overflow-x: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    text-align: center;
+    padding: 22px 20px 6px;
+  }
+
+  .logo {
+    font-size: clamp(24px, 5vw, 38px);
+    font-weight: 900;
+    color: #16a34a;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* ===== SETTINGS ===== */
+  .top-bar {
+    max-width: 660px;
+    margin: 12px auto 0;
+    padding: 0 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 700;
+    padding: 8px 18px;
+    border: 2px solid #d1fae5;
+    border-radius: 50px;
+    cursor: pointer;
+    background: white;
+    color: #64748b;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.2s;
+  }
+
+  .settings-toggle-btn:hover { border-color: #22c55e; color: #16a34a; }
+
+  .settings-panel {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    max-width: 660px;
+    margin: 10px auto 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s ease, padding 0.3s ease;
+    padding: 0 24px;
+  }
+
+  .settings-panel.open { max-height: 300px; padding: 20px 24px; }
+
+  .settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+
+  .setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .setting-group label {
+    font-size: 12px; font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .setting-group select {
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0;
+    border-radius: 12px; padding: 8px 12px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+
+  .setting-group select:focus { border-color: #22c55e; }
+
+  /* ===== GAME AREA ===== */
+  .game-container {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 16px 16px 50px;
+  }
+
+  /* status */
+  .status-bar {
+    background: white;
+    border-radius: var(--radius);
+    padding: 13px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+
+  .status-msg {
+    font-size: 17px;
+    font-weight: 800;
+    color: #334155;
+  }
+
+  /* ===== SEQUENCE DISPLAY ===== */
+  .sequence-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-size: 12px; font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .sequence-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 7px;
+    justify-content: center;
+    align-items: center;
+    min-height: 72px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  /* shape cells */
+  .shape-cell {
+    width: 62px;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 3px solid #e2e8f0;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .shape-cell.answer-slot {
+    border: 3px dashed #cbd5e1;
+    background: #f8fafc;
+    cursor: pointer;
+  }
+
+  .shape-cell.answer-slot:hover {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  .shape-cell.answer-slot.filled {
+    border-style: solid;
+    border-color: #facc15;
+    background: #fefce8;
+    cursor: pointer;
+  }
+
+  .shape-cell.correct {
+    border-color: #22c55e !important;
+    background: #dcfce7 !important;
+    animation: celebrate 0.4s ease;
+  }
+
+  .shape-cell.wrong {
+    border-color: #ef4444 !important;
+    background: #fee2e2 !important;
+    animation: shake 0.4s ease;
+  }
+
+  /* separator dots */
+  .seq-separator {
+    font-size: 22px;
+    color: #cbd5e1;
+    font-weight: 900;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  /* ===== SVG SHAPES ===== */
+  svg.shape { width: 40px; height: 40px; display: block; }
+
+  /* ===== PALETTE ===== */
+  .palette-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+
+  .palette-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .palette-btn {
+    width: 62px;
+    height: 62px;
+    border-radius: 14px;
+    border: 3px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .palette-btn:hover {
+    transform: scale(1.1);
+    border-color: #22c55e;
+    background: #f0fdf4;
+    box-shadow: 0 4px 14px rgba(34,197,94,0.2);
+  }
+
+  .palette-btn.selected {
+    border-color: #16a34a;
+    background: #dcfce7;
+    outline: 3px solid #22c55e;
+    outline-offset: 2px;
+    transform: scale(1.08);
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px; font-weight: 800;
+    padding: 13px 28px;
+    border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-start { background: linear-gradient(135deg, #22c55e, #3b82f6); color: white; }
+  .btn-check { background: linear-gradient(135deg, #f97316, #facc15); color: white; }
+  .btn-clear { background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; }
+  .btn-next  { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+
+  /* ===== RESULT ===== */
+  .result-banner {
+    background: white; border-radius: var(--radius);
+    padding: 18px; text-align: center;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+    display: none;
+  }
+
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+
+  .result-text { font-size: 22px; font-weight: 900; color: #334155; margin-bottom: 4px; }
+  .result-sub  { font-size: 14px; font-weight: 600; color: #64748b; }
+
+  /* ===== PROGRESS ===== */
+  .progress-bar-wrap {
+    background: #e2e8f0;
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+    margin: 0 0 16px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #3b82f6);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes celebrate {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.18) rotate(4deg); }
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes popIn {
+    0%   { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  .shape-cell.animate-in { animation: popIn 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+
+  .star {
+    position: fixed; pointer-events: none;
+    font-size: 24px;
+    animation: floatStar 1.4s ease-out forwards;
+    z-index: 200;
+  }
+
+  @keyframes floatStar {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-90px) scale(0.5); }
+  }
+
+  @media (max-width: 480px) {
+    .shape-cell { width: 50px; height: 50px; border-radius: 11px; }
+    svg.shape   { width: 32px; height: 32px; }
+    .palette-btn { width: 50px; height: 50px; border-radius: 11px; }
+    .sequence-row { gap: 5px; }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🔷 Sorozat Kirakós</div>
+  <div class="subtitle">Folytasd a mintát!</div>
+</header>
+
+<div class="top-bar">
+  <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+</div>
+
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Mód</label>
+      <select id="game-mode">
+        <option value="color">Szín</option>
+        <option value="shape">Forma</option>
+        <option value="mixed" selected>Vegyes</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Sorozat hossza</label>
+      <select id="pattern-length">
+        <option value="2">2 elem</option>
+        <option value="3" selected>3 elem</option>
+        <option value="4">4 elem</option>
+        <option value="5">5 elem</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Bemutatott ismétlések</label>
+      <select id="show-reps">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="3">3×</option>
+        <option value="4">4×</option>
+        <option value="5">5×</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Kitöltendő ismétlés</label>
+      <select id="answer-reps">
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="3">3×</option>
+        <option value="4">4×</option>
+        <option value="5">5×</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Egységhatár jelölve</label>
+      <select id="show-separator">
+        <option value="yes" selected>Igen (… jel)</option>
+        <option value="no">Nem</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="game-container">
+
+  <div class="status-bar">
+    <div class="status-msg" id="status-msg">Nyomj a Start gombra!</div>
+  </div>
+
+  <div class="progress-bar-wrap hidden" id="progress-wrap">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- shown sequence -->
+  <div class="sequence-section">
+    <div class="section-label">A sorozat</div>
+    <div class="sequence-row" id="shown-sequence"></div>
+  </div>
+
+  <!-- answer slots -->
+  <div class="sequence-section" id="answer-section" style="display:none">
+    <div class="section-label">Folytasd te!</div>
+    <div class="sequence-row" id="answer-row"></div>
+  </div>
+
+  <!-- result -->
+  <div class="result-banner" id="result-banner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub"  id="result-sub"></div>
+  </div>
+
+  <!-- palette -->
+  <div class="palette-section hidden" id="palette-section">
+    <div class="section-label">Válassz!</div>
+    <div class="palette-grid" id="palette-grid"></div>
+  </div>
+
+  <!-- buttons -->
+  <div class="btn-row">
+    <button class="btn btn-start" id="start-btn" onclick="startGame()">🚀 Start</button>
+    <button class="btn btn-check hidden" id="check-btn" onclick="checkAnswer()">Ellenőrzés</button>
+    <button class="btn btn-clear hidden" id="clear-btn" onclick="clearAnswers()">Töröl</button>
+    <button class="btn btn-next  hidden" id="next-btn"  onclick="startGame()">Következő ▶</button>
+  </div>
+
+</div>
+
+<script>
+// ===== CONFIG =====
+const COLORS = [
+  { id: 'red',    label: 'Piros',  hex: '#ef4444' },
+  { id: 'yellow', label: 'Sárga',  hex: '#facc15' },
+  { id: 'green',  label: 'Zöld',   hex: '#22c55e' },
+  { id: 'blue',   label: 'Kék',    hex: '#3b82f6' },
+];
+
+const SHAPES = [
+  { id: 'circle',   label: 'Kör' },
+  { id: 'square',   label: 'Négyzet' },
+  { id: 'triangle', label: 'Háromszög' },
+];
+
+// Each element = { color, shape }
+// In color mode: shape is fixed (circle), only color changes
+// In shape mode: color is fixed (blue), only shape changes
+// In mixed mode: both vary
+
+let gameState = {};
+let settingsOpen = false;
+let selectedPaletteKey = null; // key string for selected palette item
+let answerSlots = [];          // array of null | {color,shape}
+let currentSlotIdx = 0;        // which slot to fill next (sequential)
+
+// ===== UTILS =====
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function shuffle(arr) {
+  let a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
+
+function spawnStars(x, y, n) {
+  ['⭐','🌟','✨','💫'].forEach((s, i) => {
+    if (i >= n) return;
+    const el = document.createElement('div');
+    el.className = 'star';
+    el.textContent = s;
+    el.style.left = (x + (Math.random()-.5)*80) + 'px';
+    el.style.top  = (y + (Math.random()-.5)*40) + 'px';
+    el.style.animationDelay = (i * 0.1) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
+  });
+}
+
+// ===== SHAPE SVG =====
+function makeSVG(color, shape) {
+  const hex = COLORS.find(c => c.id === color)?.hex || '#888';
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 48 48');
+  svg.classList.add('shape');
+
+  let el;
+  if (shape === 'circle') {
+    el = document.createElementNS(ns, 'circle');
+    el.setAttribute('cx', '24'); el.setAttribute('cy', '24'); el.setAttribute('r', '20');
+  } else if (shape === 'square') {
+    el = document.createElementNS(ns, 'rect');
+    el.setAttribute('x', '4'); el.setAttribute('y', '4');
+    el.setAttribute('width', '40'); el.setAttribute('height', '40');
+    el.setAttribute('rx', '5');
+  } else { // triangle
+    el = document.createElementNS(ns, 'polygon');
+    el.setAttribute('points', '24,4 44,44 4,44');
+  }
+  el.setAttribute('fill', hex);
+  el.setAttribute('stroke', 'rgba(0,0,0,0.1)');
+  el.setAttribute('stroke-width', '1.5');
+  svg.appendChild(el);
+  return svg;
+}
+
+// ===== SETTINGS =====
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
+}
+
+// ===== GENERATE PATTERN =====
+function generatePattern(mode, patternLen) {
+  // The repeating unit is `patternLen` items long
+  // Generate the unit ensuring consecutive items differ in the varying dimension
+  const unit = [];
+  for (let i = 0; i < patternLen; i++) {
+    let color, shape;
+    let attempts = 0;
+    do {
+      color = rand(COLORS).id;
+      shape = rand(SHAPES).id;
+      attempts++;
+    } while (
+      attempts < 30 &&
+      unit.length > 0 && (
+        (mode === 'color' && color === unit[unit.length-1].color) ||
+        (mode === 'shape' && shape === unit[unit.length-1].shape) ||
+        (mode === 'mixed' && color === unit[unit.length-1].color && shape === unit[unit.length-1].shape)
+      )
+    );
+
+    // In color mode: fix shape to circle
+    if (mode === 'color') shape = 'circle';
+    // In shape mode: fix color to blue
+    if (mode === 'shape') color = 'blue';
+
+    unit.push({ color, shape });
+  }
+  return unit;
+}
+
+// ===== BUILD PALETTE =====
+function buildPalette(mode) {
+  const grid = document.getElementById('palette-grid');
+  grid.innerHTML = '';
+  selectedPaletteKey = null;
+
+  if (mode === 'color') {
+    // show all colors as circles
+    COLORS.forEach(c => {
+      const btn = document.createElement('div');
+      btn.className = 'palette-btn';
+      btn.dataset.key = c.id + '_circle';
+      btn.appendChild(makeSVG(c.id, 'circle'));
+      btn.addEventListener('click', () => selectPalette(btn, c.id + '_circle'));
+      grid.appendChild(btn);
+    });
+  } else if (mode === 'shape') {
+    // show all shapes in blue
+    SHAPES.forEach(s => {
+      const btn = document.createElement('div');
+      btn.className = 'palette-btn';
+      btn.dataset.key = 'blue_' + s.id;
+      btn.appendChild(makeSVG('blue', s.id));
+      btn.addEventListener('click', () => selectPalette(btn, 'blue_' + s.id));
+      grid.appendChild(btn);
+    });
+  } else {
+    // mixed: all color×shape combos (12 items)
+    const combos = [];
+    COLORS.forEach(c => SHAPES.forEach(s => combos.push({ color: c.id, shape: s.id })));
+    combos.forEach(combo => {
+      const btn = document.createElement('div');
+      btn.className = 'palette-btn';
+      btn.dataset.key = combo.color + '_' + combo.shape;
+      btn.appendChild(makeSVG(combo.color, combo.shape));
+      btn.addEventListener('click', () => selectPalette(btn, combo.color + '_' + combo.shape));
+      grid.appendChild(btn);
+    });
+  }
+}
+
+function selectPalette(btn, key) {
+  document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
+  if (selectedPaletteKey === key) {
+    selectedPaletteKey = null;
+    return;
+  }
+  selectedPaletteKey = key;
+  btn.classList.add('selected');
+  // Auto-fill next empty slot
+  fillNextEmptySlot();
+}
+
+// ===== START GAME =====
+function startGame() {
+  const mode          = document.getElementById('game-mode').value;
+  const patternLen    = parseInt(document.getElementById('pattern-length').value);
+  const showReps      = parseInt(document.getElementById('show-reps').value);
+  const answerReps    = parseInt(document.getElementById('answer-reps').value);
+  const showSeparator = document.getElementById('show-separator').value === 'yes';
+
+  const unit = generatePattern(mode, patternLen);
+
+  gameState = { mode, patternLen, showReps, answerReps, showSeparator, unit, phase: 'playing' };
+  answerSlots = Array(patternLen * answerReps).fill(null);
+  currentSlotIdx = 0;
+  selectedPaletteKey = null;
+
+  // Hide/show elements
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('answer-section').style.display = '';
+  document.getElementById('palette-section').classList.remove('hidden');
+  document.getElementById('check-btn').classList.remove('hidden');
+  document.getElementById('clear-btn').classList.remove('hidden');
+  const startBtn = document.getElementById('start-btn');
+  startBtn.textContent = '🔄 Új játék';
+  startBtn.classList.remove('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('progress-wrap').classList.remove('hidden');
+  document.getElementById('progress-fill').style.width = '0%';
+
+  renderShownSequence(unit, showReps, showSeparator);
+  renderAnswerSlots(patternLen * answerReps);
+  buildPalette(mode);
+
+  setStatus('Melyik jön következőnek? Folytasd a mintát!');
+}
+
+// ===== RENDER SHOWN SEQUENCE =====
+function renderShownSequence(unit, reps, showSeparator) {
+  const row = document.getElementById('shown-sequence');
+  row.innerHTML = '';
+
+  for (let r = 0; r < reps; r++) {
+    if (r > 0 && showSeparator) {
+      const sep = document.createElement('div');
+      sep.className = 'seq-separator';
+      sep.textContent = '…';
+      row.appendChild(sep);
+    }
+    unit.forEach((item, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'shape-cell animate-in';
+      cell.style.animationDelay = ((r * unit.length + i) * 0.06) + 's';
+      cell.appendChild(makeSVG(item.color, item.shape));
+      row.appendChild(cell);
+    });
+  }
+
+  // trailing dots to hint continuation
+  if (showSeparator) {
+    const sep2 = document.createElement('div');
+    sep2.className = 'seq-separator';
+    sep2.textContent = '…';
+    row.appendChild(sep2);
+  }
+}
+
+// ===== RENDER ANSWER SLOTS =====
+function renderAnswerSlots(count) {
+  const row = document.getElementById('answer-row');
+  row.innerHTML = '';
+
+  for (let i = 0; i < count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'answer-slot shape-cell';
+    cell.dataset.slotIdx = i;
+    cell.addEventListener('click', () => onSlotClick(i));
+    row.appendChild(cell);
+  }
+}
+
+// ===== SLOT INTERACTION =====
+function onSlotClick(idx) {
+  if (gameState.phase !== 'playing') return;
+
+  if (answerSlots[idx] !== null) {
+    // Remove placed item
+    answerSlots[idx] = null;
+    refreshAnswerSlots();
+    updateProgress();
+    return;
+  }
+
+  if (!selectedPaletteKey) {
+    setStatus('Először válassz egy formát lentről, aztán kattints a helyre!');
+    return;
+  }
+
+  placeInSlot(idx);
+}
+
+function fillNextEmptySlot() {
+  // find first empty slot
+  const firstEmpty = answerSlots.indexOf(null);
+  if (firstEmpty === -1 || !selectedPaletteKey) return;
+  placeInSlot(firstEmpty);
+}
+
+function placeInSlot(idx) {
+  if (!selectedPaletteKey) return;
+  const [color, shape] = selectedPaletteKey.split('_');
+  answerSlots[idx] = { color, shape };
+  refreshAnswerSlots();
+  updateProgress();
+
+  // Deselect palette
+  document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
+  selectedPaletteKey = null;
+
+  const filled = answerSlots.filter(s => s !== null).length;
+  const total  = answerSlots.length;
+  if (filled === total) {
+    setStatus('Minden hely kitöltve! Nyomj Ellenőrzésre!');
+  } else {
+    setStatus(`${filled} / ${total} hely kitöltve`);
+  }
+}
+
+function refreshAnswerSlots() {
+  const cells = document.getElementById('answer-row').querySelectorAll('.answer-slot');
+  cells.forEach((cell, i) => {
+    cell.innerHTML = '';
+    cell.className = 'answer-slot shape-cell';
+    if (answerSlots[i]) {
+      cell.classList.add('filled', 'animate-in');
+      cell.appendChild(makeSVG(answerSlots[i].color, answerSlots[i].shape));
+    }
+  });
+}
+
+function updateProgress() {
+  const filled = answerSlots.filter(s => s !== null).length;
+  const pct = (filled / answerSlots.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function clearAnswers() {
+  answerSlots = Array(answerSlots.length).fill(null);
+  refreshAnswerSlots();
+  updateProgress();
+  document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
+  selectedPaletteKey = null;
+  document.getElementById('result-banner').classList.remove('show');
+  setStatus('Melyik jön következőnek? Folytasd a mintát!');
+}
+
+// ===== CHECK ANSWER =====
+function checkAnswer() {
+  if (gameState.phase !== 'playing') return;
+
+  const { unit, answerReps, patternLen } = gameState;
+  const cells = document.getElementById('answer-row').querySelectorAll('.answer-slot');
+
+  let correct = 0;
+
+  cells.forEach((cell, i) => {
+    const posInUnit = i % patternLen;
+    const expected  = unit[posInUnit];
+    const given     = answerSlots[i];
+
+    cell.classList.remove('animate-in');
+
+    if (!given) {
+      // Empty — show expected
+      cell.innerHTML = '';
+      cell.appendChild(makeSVG(expected.color, expected.shape));
+      cell.classList.add('wrong');
+    } else {
+      const colorOk = gameState.mode === 'shape' ? true : given.color === expected.color;
+      const shapeOk = gameState.mode === 'color' ? true : given.shape === expected.shape;
+
+      if (colorOk && shapeOk) {
+        cell.classList.add('correct');
+        correct++;
+        const r = cell.getBoundingClientRect();
+        setTimeout(() => spawnStars(r.left + r.width/2, r.top, 3), i * 80);
+      } else {
+        cell.classList.add('wrong');
+        // Show what it should be
+        cell.innerHTML = '';
+        cell.appendChild(makeSVG(expected.color, expected.shape));
+      }
+    }
+  });
+
+  gameState.phase = 'done';
+  document.getElementById('check-btn').classList.add('hidden');
+  document.getElementById('clear-btn').classList.add('hidden');
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('start-btn').classList.add('hidden');
+
+  const total = answerSlots.length;
+  let icon, text, sub;
+  if (correct === total) {
+    icon = '🎉'; text = 'Szuper! Tökéletes!'; sub = `Minden elemet jól raktál ki! (${correct}/${total})`;
+  } else if (correct >= Math.ceil(total * 0.6)) {
+    icon = '👍'; text = 'Szép munka!'; sub = `${correct}/${total} helyes – majdnem tökéletes!`;
+  } else {
+    icon = '🙈'; text = 'Próbáld újra!'; sub = `${correct}/${total} helyes – piros = helyes megoldás`;
+  }
+
+  setStatus(icon + ' ' + text);
+  const banner = document.getElementById('result-banner');
+  document.getElementById('result-text').textContent = icon + ' ' + text;
+  document.getElementById('result-sub').textContent  = sub;
+  banner.classList.add('show');
+
+  document.getElementById('progress-fill').style.width = (correct / total * 100) + '%';
+  document.getElementById('progress-fill').style.background =
+    correct === total ? 'linear-gradient(90deg,#22c55e,#16a34a)' : 'linear-gradient(90deg,#f97316,#facc15)';
+}
+</script>
+</body>
+</html>
