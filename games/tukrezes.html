@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tükrözős játék</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0FFF4;
+    --white: #ffffff;
+    --green: #22C55E;
+    --green-dark: #15803D;
+    --red: #FF6B6B;
+    --blue: #60A5FA;
+    --blue-dark: #2563EB;
+    --yellow: #FCD34D;
+    --cell-on: #22C55E;
+    --cell-off: #E2F5EA;
+    --cell-border: #A7D7B4;
+    --cell-user: #60A5FA;
+    --cell-correct: #22C55E;
+    --cell-wrong: #FF6B6B;
+    --text: #14532D;
+    --muted: #6B9E7A;
+    --mirror-line: #F97316;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 12px 48px;
+    gap: 14px;
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    color: var(--green-dark);
+    text-align: center;
+  }
+
+  /* Settings toggle */
+  .settings-toggle {
+    background: var(--white);
+    border: 2.5px solid var(--cell-border);
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: var(--green-dark);
+    cursor: pointer;
+  }
+  .settings-toggle:hover { background: var(--cell-off); }
+
+  /* Settings panel */
+  .settings-panel {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 18px 22px;
+    box-shadow: 0 4px 18px rgba(34,197,94,0.10);
+    width: min(460px, 100%);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-panel.open { display: flex; }
+
+  .settings-title {
+    font-weight: 900;
+    font-size: 1rem;
+    color: var(--green-dark);
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .setting-label {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text);
+    flex: 1;
+  }
+  .setting-label small {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* Toggle switch */
+  .toggle-group {
+    display: flex;
+    border-radius: 50px;
+    border: 2px solid var(--cell-border);
+    overflow: hidden;
+  }
+
+  .toggle-group button {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.8rem;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    background: var(--white);
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .toggle-group button.active {
+    background: var(--green);
+    color: white;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 7px;
+    border-radius: 8px;
+    background: var(--cell-off);
+    outline: none;
+    cursor: pointer;
+    width: 120px;
+    flex-shrink: 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--green);
+    cursor: pointer;
+  }
+
+  .setting-value {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: var(--green-dark);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .apply-btn {
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 9px 22px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.92rem;
+    cursor: pointer;
+    align-self: flex-end;
+    box-shadow: 0 4px 0 var(--green-dark);
+    transition: transform 0.1s;
+  }
+  .apply-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--green-dark); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border-radius: 50px;
+    padding: 7px 20px;
+    box-shadow: 0 2px 10px rgba(34,197,94,0.10);
+    font-weight: 900;
+    font-size: 0.88rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .badge {
+    border-radius: 50px;
+    padding: 3px 12px;
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: white;
+  }
+  .badge-green { background: var(--green); }
+  .badge-blue  { background: var(--blue-dark); }
+
+  /* Phase text */
+  .phase {
+    font-size: clamp(0.95rem, 3vw, 1.15rem);
+    font-weight: 900;
+    color: var(--green-dark);
+    text-align: center;
+    min-height: 1.5rem;
+  }
+
+  /* ── DRAW MODE layout ── */
+  .draw-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .grid-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .grid-label {
+    font-weight: 900;
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    min-width: 48px;
+  }
+
+  /* Mirror line indicator */
+  .mirror-label {
+    font-weight: 900;
+    font-size: 0.82rem;
+    color: var(--mirror-line);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    gap: 4px;
+    background: var(--white);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 3px 14px rgba(34,197,94,0.10);
+    border: 2.5px solid var(--cell-border);
+    position: relative;
+  }
+
+  .cell {
+    border-radius: 6px;
+    border: 2px solid var(--cell-border);
+    cursor: pointer;
+    transition: background 0.12s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cell.readonly { cursor: default; }
+  .cell.on       { background: var(--cell-on); border-color: var(--green-dark); }
+  .cell.off      { background: var(--cell-off); }
+  .cell.user-on  { background: var(--cell-user); border-color: var(--blue-dark); }
+  .cell.correct  { background: var(--cell-correct); border-color: var(--green-dark); animation: pop 0.3s cubic-bezier(0.34,1.6,0.64,1); }
+  .cell.wrong    { background: var(--cell-wrong); border-color: #c0392b; animation: shake 0.4s ease; }
+
+  .cell:not(.readonly):hover { transform: scale(1.1); }
+  .cell:not(.readonly):active { transform: scale(0.9); }
+
+  /* Mirror line overlay */
+  .mirror-line-v {
+    position: absolute;
+    top: 8px; bottom: 8px;
+    width: 4px;
+    background: var(--mirror-line);
+    border-radius: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .mirror-line-h {
+    position: absolute;
+    left: 8px; right: 8px;
+    height: 4px;
+    background: var(--mirror-line);
+    border-radius: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ── CHOICE MODE layout ── */
+  .choice-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .choice-source {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .choice-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: min(440px, 100%);
+  }
+
+  .choice-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 10px;
+    cursor: pointer;
+    border: 3px solid var(--cell-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, transform 0.12s;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.08);
+  }
+  .choice-card:hover  { border-color: var(--blue); transform: scale(1.03); }
+  .choice-card.correct-choice { border-color: var(--green); background: #F0FFF4; }
+  .choice-card.wrong-choice   { border-color: var(--red); background: #FFF5F5; }
+
+  .choice-letter {
+    font-weight: 900;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.98rem;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+
+  .btn-primary   { background: var(--green); color: white; }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-check     { background: var(--blue-dark); color: white; box-shadow: 0 4px 0 #1e40af; }
+  .btn-clear     { background: var(--red); color: white; }
+
+  /* Result */
+  .result {
+    font-weight: 900;
+    font-size: clamp(0.95rem, 3.5vw, 1.3rem);
+    text-align: center;
+    min-height: 1.6rem;
+  }
+  .result.success { color: var(--green-dark); }
+  .result.fail    { color: var(--red); }
+
+  .stars { font-size: 1.5rem; letter-spacing: 4px; min-height: 1.8rem; text-align: center; }
+
+  @keyframes pop {
+    0%   { transform: scale(0.8); }
+    60%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-5px); }
+    75%      { transform: translateX(5px); }
+  }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<h1>🪞 Tükrözős játék</h1>
+
+<button class="settings-toggle" id="settingsToggle">⚙️ Beállítások</button>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-title">Játék beállítások</div>
+
+  <div class="setting-row">
+    <div class="setting-label">Rács mérete<small>3×3 – 8×8</small></div>
+    <input type="range" id="sizeSlider" min="3" max="8" value="4">
+    <span class="setting-value" id="sizeVal">4×4</span>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Bejelölt cellák száma<small>mennyi legyen az alakzatban</small></div>
+    <input type="range" id="cellsSlider" min="2" max="16" value="5">
+    <span class="setting-value" id="cellsVal">5</span>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Tükrözés iránya</div>
+    <div class="toggle-group" id="axisGroup">
+      <button data-val="vertical" class="active">Függőleges</button>
+      <button data-val="horizontal">Vízszintes</button>
+      <button data-val="random">Véletlenszerű</button>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Feladat típusa</div>
+    <div class="toggle-group" id="modeGroup">
+      <button data-val="draw" class="active">Rajzolós</button>
+      <button data-val="choice">Választós</button>
+      <button data-val="random">Vegyes</button>
+    </div>
+  </div>
+
+  <button class="apply-btn" id="applyBtn">Alkalmaz</button>
+</div>
+
+<div class="status-bar">
+  <span class="badge badge-green" id="roundBadge">1. feladat</span>
+  <span id="axisBadge">↕ Függőleges</span>
+  <span>⭐ <span id="scoreVal">0</span> pont</span>
+  <span>✅ <span id="correctVal">0</span> helyes</span>
+</div>
+
+<div class="phase" id="phaseText">Nyomd meg a gombot a kezdéshez!</div>
+
+<div id="gameArea"></div>
+
+<div class="result" id="result"></div>
+<div class="stars" id="stars"></div>
+
+<div class="btn-row" id="btnRow">
+  <button class="btn btn-clear" id="clearBtn" style="display:none">🗑️ Törlés</button>
+  <button class="btn btn-check" id="checkBtn" style="display:none">✅ Ellenőrzés</button>
+  <button class="btn btn-primary" id="mainBtn">▶ Kezdés</button>
+</div>
+
+<script>
+  // ── Config ────────────────────────────────────────────
+  let cfg = { size: 4, cells: 5, axis: 'vertical', mode: 'draw' };
+  let score = 0, roundCount = 0, correctCount = 0, consecutiveCorrect = 0;
+  let phase = 'idle';
+  let currentPattern = [], correctAnswer = [];
+  let userPattern = [];
+  let currentAxis = 'vertical';
+  let currentMode = 'draw';
+  let isRetry = false;
+
+  // ── Settings UI ───────────────────────────────────────
+  const sizeSlider  = document.getElementById('sizeSlider');
+  const cellsSlider = document.getElementById('cellsSlider');
+
+  function updateDisplays() {
+    const s = parseInt(sizeSlider.value);
+    document.getElementById('sizeVal').textContent  = `${s}×${s}`;
+    const maxCells = Math.floor(s * s / 2);
+    cellsSlider.max = maxCells;
+    if (parseInt(cellsSlider.value) > maxCells) cellsSlider.value = maxCells;
+    document.getElementById('cellsVal').textContent = cellsSlider.value;
+  }
+
+  sizeSlider.addEventListener('input', updateDisplays);
+  cellsSlider.addEventListener('input', updateDisplays);
+  updateDisplays();
+
+  // Toggle groups
+  document.querySelectorAll('.toggle-group').forEach(group => {
+    group.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  document.getElementById('settingsToggle').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.toggle('open');
+  });
+
+  document.getElementById('applyBtn').addEventListener('click', () => {
+    cfg.size  = parseInt(sizeSlider.value);
+    cfg.cells = parseInt(cellsSlider.value);
+    cfg.axis  = document.querySelector('#axisGroup .active').dataset.val;
+    cfg.mode  = document.querySelector('#modeGroup .active').dataset.val;
+    document.getElementById('settingsPanel').classList.remove('open');
+    resetGame();
+  });
+
+  // ── DOM ───────────────────────────────────────────────
+  const gameArea   = document.getElementById('gameArea');
+  const phaseText  = document.getElementById('phaseText');
+  const resultEl   = document.getElementById('result');
+  const starsEl    = document.getElementById('stars');
+  const mainBtn    = document.getElementById('mainBtn');
+  const clearBtn   = document.getElementById('clearBtn');
+  const checkBtn   = document.getElementById('checkBtn');
+  const scoreValEl = document.getElementById('scoreVal');
+  const correctValEl = document.getElementById('correctVal');
+  const roundBadge = document.getElementById('roundBadge');
+  const axisBadge  = document.getElementById('axisBadge');
+
+  // ── Pattern generation ────────────────────────────────
+  function generatePattern(size, count, axis) {
+    // Only fill half the grid (source side)
+    const halfCells = [];
+    if (axis === 'vertical') {
+      // left half
+      for (let r = 0; r < size; r++)
+        for (let c = 0; c < Math.floor(size / 2); c++)
+          halfCells.push(r * size + c);
+    } else {
+      // top half
+      for (let r = 0; r < Math.floor(size / 2); r++)
+        for (let c = 0; c < size; c++)
+          halfCells.push(r * size + c);
+    }
+    // shuffle and pick
+    const shuffled = halfCells.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+  }
+
+  function getMirror(pattern, size, axis) {
+    return pattern.map(idx => {
+      const r = Math.floor(idx / size), c = idx % size;
+      if (axis === 'vertical')   return r * size + (size - 1 - c);
+      else                        return (size - 1 - r) * size + c;
+    });
+  }
+
+  // ── Build cell element ────────────────────────────────
+  function makeCell(idx, size, readonly, cellPx) {
+    const cell = document.createElement('div');
+    cell.className = 'cell off' + (readonly ? ' readonly' : '');
+    cell.style.width = cell.style.height = cellPx + 'px';
+    cell.dataset.idx = idx;
+    return cell;
+  }
+
+  function makeGrid(size, pattern, interactive, axis, small) {
+    const cellPx = small
+      ? Math.max(14, Math.floor((Math.min(window.innerWidth / 2 - 40, 130)) / size) - 3)
+      : Math.max(28, Math.floor((Math.min(window.innerWidth - 48, 320)) / size) - 4);
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    if (small) { grid.style.padding = '5px'; grid.style.gap = '2px'; }
+    grid.style.gridTemplateColumns = `repeat(${size}, ${cellPx}px)`;
+
+    for (let i = 0; i < size * size; i++) {
+      const cell = makeCell(i, size, !interactive, cellPx);
+      if (pattern.includes(i)) cell.classList.replace('off', 'on');
+      if (interactive) {
+        cell.addEventListener('click', () => onDrawCell(cell, i));
+      }
+      grid.appendChild(cell);
+    }
+
+    // Mirror line
+    const line = document.createElement('div');
+    line.className = axis === 'vertical' ? 'mirror-line-v' : 'mirror-line-h';
+    grid.appendChild(line);
+
+    return grid;
+  }
+
+  // ── Draw mode ─────────────────────────────────────────
+  function onDrawCell(cell, idx) {
+    if (phase !== 'drawing') return;
+    if (cell.classList.contains('user-on')) {
+      cell.classList.replace('user-on', 'off');
+      userPattern = userPattern.filter(i => i !== idx);
+    } else {
+      cell.classList.replace('off', 'user-on');
+      userPattern.push(idx);
+    }
+  }
+
+  function buildDrawMode(size, pattern, axis) {
+    userPattern = [];
+    const area = document.createElement('div');
+    area.className = 'draw-area';
+
+    const axisLabel = document.createElement('div');
+    axisLabel.className = 'mirror-label';
+    axisLabel.textContent = axis === 'vertical' ? '↕ Tükrözd jobbra!' : '↔ Tükrözd lefelé!';
+    area.appendChild(axisLabel);
+
+    const grid = makeGrid(size, pattern, true, axis, false);
+    area.appendChild(grid);
+    return area;
+  }
+
+  // ── Choice mode ───────────────────────────────────────
+  function buildChoiceMode(size, pattern, correct, axis) {
+    const area = document.createElement('div');
+    area.className = 'choice-area';
+
+    // Source grid
+    const src = document.createElement('div');
+    src.className = 'choice-source';
+    const srcLabel = document.createElement('div');
+    srcLabel.className = 'mirror-label';
+    srcLabel.textContent = axis === 'vertical' ? '↕ Melyik a tükörképe jobbra?' : '↔ Melyik a tükörképe lefelé?';
+    src.appendChild(srcLabel);
+    src.appendChild(makeGrid(size, pattern, false, axis, false));
+    area.appendChild(src);
+
+    // Generate 3 wrong answers
+    const options = [correct];
+    let attempts = 0;
+    while (options.length < 4 && attempts < 100) {
+      attempts++;
+      const wrong = generatePattern(size, pattern.length, axis === 'vertical' ? 'horizontal' : 'vertical')
+        .map(idx => getMirror([idx], size, axis)[0]);
+      const wrongMirrored = generateRandomMirrorLike(size, correct, axis);
+      if (!arraysEqual(wrongMirrored, correct) && !options.some(o => arraysEqual(o, wrongMirrored))) {
+        options.push(wrongMirrored);
+      }
+    }
+    // Fallback: fill with shuffled correct
+    while (options.length < 4) {
+      const fake = [...correct].sort(() => Math.random() - 0.5).slice(0, correct.length - 1);
+      if (!options.some(o => arraysEqual(o, fake))) options.push(fake);
+      else options.push(correct.slice(0, -1));
+    }
+
+    // Shuffle options
+    const shuffled = options.slice().sort(() => Math.random() - 0.5);
+    const letters = ['A', 'B', 'C', 'D'];
+
+    const optGrid = document.createElement('div');
+    optGrid.className = 'choice-options';
+
+    shuffled.forEach((opt, i) => {
+      const card = document.createElement('div');
+      card.className = 'choice-card';
+      const lbl = document.createElement('div');
+      lbl.className = 'choice-letter';
+      lbl.textContent = letters[i];
+      card.appendChild(lbl);
+      card.appendChild(makeGrid(size, opt, false, axis, true));
+      card.addEventListener('click', () => {
+        if (phase !== 'drawing') return;
+        const isCorrect = arraysEqual(opt.slice().sort((a,b)=>a-b), correct.slice().sort((a,b)=>a-b));
+        onChoiceAnswer(isCorrect, card, shuffled, correct, optGrid);
+      });
+      optGrid.appendChild(card);
+    });
+
+    area.appendChild(optGrid);
+    return area;
+  }
+
+  function generateRandomMirrorLike(size, correct, axis) {
+    // Shift or flip a few cells from correct answer
+    const result = [...correct];
+    const numChanges = Math.max(1, Math.floor(result.length * 0.4));
+    for (let i = 0; i < numChanges; i++) {
+      const toChange = Math.floor(Math.random() * result.length);
+      let newIdx;
+      let tries = 0;
+      do {
+        if (axis === 'vertical') {
+          const r = Math.floor(Math.random() * size);
+          const c = Math.floor(size / 2) + Math.floor(Math.random() * Math.ceil(size / 2));
+          newIdx = r * size + Math.min(c, size - 1);
+        } else {
+          const r = Math.floor(size / 2) + Math.floor(Math.random() * Math.ceil(size / 2));
+          const c = Math.floor(Math.random() * size);
+          newIdx = Math.min(r, size - 1) * size + c;
+        }
+        tries++;
+      } while (result.includes(newIdx) && tries < 20);
+      if (!result.includes(newIdx)) result[toChange] = newIdx;
+    }
+    return result;
+  }
+
+  function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    const sa = [...a].sort((x,y)=>x-y);
+    const sb = [...b].sort((x,y)=>x-y);
+    return sa.every((v, i) => v === sb[i]);
+  }
+
+  function onChoiceAnswer(isCorrect, card, allOptions, correct, container) {
+    phase = 'result';
+    checkBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+
+    // Mark all cards
+    const cards = container.querySelectorAll('.choice-card');
+    cards.forEach((c, i) => {
+      if (arraysEqual(allOptions[i].slice().sort((a,b)=>a-b), correct.slice().sort((a,b)=>a-b))) {
+        c.classList.add('correct-choice');
+      }
+    });
+    if (!isCorrect) card.classList.add('wrong-choice');
+
+    finishRound(isCorrect);
+  }
+
+  // ── Check draw answer ─────────────────────────────────
+  function checkDrawAnswer() {
+    phase = 'result';
+    checkBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+
+    const cells = gameArea.querySelectorAll('.cell:not(.readonly)');
+    const isCorrect = arraysEqual(userPattern, correctAnswer) ||
+                      arraysEqual(userPattern.slice().sort((a,b)=>a-b), correctAnswer.slice().sort((a,b)=>a-b));
+
+    cells.forEach(cell => {
+      const idx = parseInt(cell.dataset.idx);
+      const inUser    = userPattern.includes(idx);
+      const inCorrect = correctAnswer.includes(idx);
+      if (inUser && inCorrect) { cell.className = 'cell correct'; }
+      else if (inUser && !inCorrect) { cell.className = 'cell wrong'; }
+      else if (!inUser && inCorrect) { cell.className = 'cell on'; } // show missed
+    });
+
+    finishRound(isCorrect);
+  }
+
+  // ── Finish round ──────────────────────────────────────
+  function finishRound(isCorrect) {
+    if (isCorrect) {
+      isRetry = false;
+      consecutiveCorrect++;
+      correctCount++;
+      correctValEl.textContent = correctCount;
+      score += 10 + cfg.size * 2;
+      scoreValEl.textContent = score;
+      resultEl.textContent = '🎉 Helyes! Szuper!';
+      resultEl.className = 'result success';
+      starsEl.textContent = consecutiveCorrect >= 3 ? '⭐⭐⭐' : consecutiveCorrect >= 2 ? '⭐⭐' : '⭐';
+      mainBtn.textContent = '▶ Következő feladat';
+    } else {
+      isRetry = true;
+      consecutiveCorrect = 0;
+      resultEl.textContent = '😅 Nem egészen… Próbáld újra!';
+      resultEl.className = 'result fail';
+      starsEl.textContent = '';
+      mainBtn.textContent = '🔄 Újra';
+    }
+    mainBtn.style.display = 'inline-block';
+  }
+
+  // ── New round ─────────────────────────────────────────
+  function newRound() {
+    const retrying = isRetry;
+    isRetry = false;
+    if (!retrying) roundCount++;
+    roundBadge.textContent = `${roundCount}. feladat`;
+    resultEl.textContent = ''; resultEl.className = 'result';
+    starsEl.textContent = '';
+    userPattern = []; phase = 'drawing';
+    mainBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+    checkBtn.style.display = 'none';
+    gameArea.innerHTML = '';
+
+    // Resolve axis
+    if (!retrying) {
+      currentAxis = cfg.axis === 'random'
+        ? (Math.random() < 0.5 ? 'vertical' : 'horizontal')
+        : cfg.axis;
+      currentMode = cfg.mode === 'random'
+        ? (Math.random() < 0.5 ? 'draw' : 'choice')
+        : cfg.mode;
+    }
+
+    axisBadge.textContent = currentAxis === 'vertical' ? '↕ Függőleges' : '↔ Vízszintes';
+
+    if (!retrying) {
+      currentPattern = generatePattern(cfg.size, cfg.cells, currentAxis);
+      correctAnswer  = getMirror(currentPattern, cfg.size, currentAxis);
+    }
+
+    if (currentMode === 'draw') {
+      phaseText.textContent = '✏️ Rajzold meg a tükörképet!';
+      gameArea.appendChild(buildDrawMode(cfg.size, currentPattern, currentAxis));
+      clearBtn.style.display = 'inline-block';
+      checkBtn.style.display = 'inline-block';
+    } else {
+      phaseText.textContent = '👆 Melyik a helyes tükörkép?';
+      gameArea.appendChild(buildChoiceMode(cfg.size, currentPattern, correctAnswer, currentAxis));
+    }
+  }
+
+  // ── Reset ─────────────────────────────────────────────
+  function resetGame() {
+    score = 0; roundCount = 0; correctCount = 0; consecutiveCorrect = 0; isRetry = false;
+    scoreValEl.textContent = '0'; correctValEl.textContent = '0';
+    roundBadge.textContent = '1. feladat';
+    resultEl.textContent = ''; starsEl.textContent = '';
+    phase = 'idle';
+    mainBtn.textContent = '▶ Kezdés';
+    mainBtn.style.display = 'inline-block';
+    clearBtn.style.display = 'none';
+    checkBtn.style.display = 'none';
+    phaseText.textContent = 'Nyomd meg a gombot a kezdéshez!';
+    gameArea.innerHTML = '';
+  }
+
+  // ── Buttons ───────────────────────────────────────────
+  mainBtn.addEventListener('click', () => { if (phase === 'idle' || phase === 'result') newRound(); });
+  clearBtn.addEventListener('click', () => {
+    if (phase !== 'drawing' || currentMode !== 'draw') return;
+    userPattern = [];
+    gameArea.querySelectorAll('.cell:not(.readonly)').forEach(c => {
+      c.className = 'cell off';
+    });
+  });
+  checkBtn.addEventListener('click', () => {
+    if (phase === 'drawing' && currentMode === 'draw') checkDrawAnswer();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi változott?</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fff7ed;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 18px;
+    --accent: #ea580c;
+    --accent2: #f97316;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(249,115,22,0.10) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(250,204,21,0.10) 0%, transparent 40%);
+    overflow-x: hidden;
+  }
+
+  header { text-align: center; padding: 18px 16px 4px; }
+  .logo { font-size: clamp(22px,5vw,34px); font-weight: 900; color: var(--accent); letter-spacing: -0.5px; }
+  .subtitle { font-size: 14px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+  /* SETTINGS */
+  .top-bar { max-width: 740px; margin: 10px auto 0; padding: 0 14px; display: flex; justify-content: flex-end; }
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 7px 16px;
+    border: 2px solid #fed7aa; border-radius: 50px; cursor: pointer;
+    background: white; color: #64748b; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;
+  }
+  .settings-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .settings-panel {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    max-width: 740px; margin: 8px auto 0; overflow: hidden;
+    max-height: 0; transition: max-height 0.35s ease, padding 0.3s ease; padding: 0 22px;
+  }
+  .settings-panel.open { max-height: 320px; padding: 18px 22px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .setting-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 120px; }
+  .setting-group label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .setting-group select {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 11px; padding: 7px 11px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+  .setting-group select:focus { border-color: var(--accent); }
+
+  /* GAME */
+  .game-container { max-width: 740px; margin: 0 auto; padding: 12px 14px 50px; }
+
+  .status-bar { background: white; border-radius: var(--radius); padding: 12px 18px; margin-bottom: 12px; box-shadow: var(--shadow); text-align: center; }
+  .status-msg { font-size: 16px; font-weight: 800; color: #334155; }
+
+  /* TIMER */
+  .timer-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+  .timer-display {
+    font-size: 22px; font-weight: 900; color: var(--accent);
+    background: white; border-radius: 50px; padding: 6px 18px;
+    box-shadow: var(--shadow); min-width: 90px; text-align: center;
+    border: 2px solid #fed7aa;
+  }
+  .timer-display.warning { color: #ef4444; border-color: #fca5a5; animation: pulse 0.5s ease-in-out infinite; }
+
+  /* PROGRESS */
+  .progress-wrap { background: #e2e8f0; border-radius: 99px; height: 8px; margin-bottom: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#f97316,#facc15); border-radius: 99px; transition: width 0.4s ease; width: 0%; }
+
+  /* TWO-GRID LAYOUT */
+  .grids-area {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .grid-panel {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 12px;
+    flex: 1 1 0; min-width: 0;
+  }
+
+  .grid-panel-label {
+    font-size: 11px; font-weight: 800; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: center; margin-bottom: 10px;
+  }
+
+  .cell-grid {
+    display: grid;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  /* CELLS */
+  .grid-cell {
+    aspect-ratio: 1;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 2px solid #e2e8f0;
+    background: #f8fafc;
+    user-select: none;
+    position: relative;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  }
+
+  /* Right grid: clickable */
+  .grid-cell.clickable { cursor: pointer; }
+  .grid-cell.clickable:hover { transform: scale(1.08); border-color: var(--accent2); background: #fff7ed; }
+
+  /* Neutral selection (before check) */
+  .grid-cell.selected {
+    background: linear-gradient(135deg,#fff7ed,#ffedd5) !important;
+    border-color: var(--accent2) !important;
+    transform: scale(1.06);
+  }
+  .grid-cell.selected::after {
+    content: '?'; position: absolute; top: 1px; right: 3px;
+    font-size: 9px; font-weight: 900; color: var(--accent); line-height: 1;
+  }
+
+  /* After check */
+  .grid-cell.correct {
+    background: linear-gradient(135deg,#d1fae5,#a7f3d0) !important;
+    border-color: #22c55e !important;
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .grid-cell.correct::after {
+    content: '✓'; position: absolute; top: 1px; right: 3px;
+    font-size: 9px; font-weight: 900; color: #16a34a; line-height: 1;
+  }
+  .grid-cell.wrong {
+    background: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    animation: shake 0.35s ease;
+  }
+  .grid-cell.wrong::after {
+    content: '✗'; position: absolute; top: 1px; right: 3px;
+    font-size: 9px; font-weight: 900; color: #ef4444; line-height: 1;
+  }
+  .grid-cell.missed {
+    background: linear-gradient(135deg,#fff7ed,#ffedd5) !important;
+    border-color: var(--accent2) !important;
+    animation: pulse-border 0.8s ease 3;
+  }
+
+  /* Left grid: highlight changed cell after check */
+  .grid-cell.changed-orig {
+    background: linear-gradient(135deg,#fef9c3,#fef3c7) !important;
+    border-color: #facc15 !important;
+  }
+
+  .grid-cell svg.shape { width: 65%; height: 65%; }
+
+  /* RESULT */
+  .result-banner { background: white; border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); margin-bottom: 12px; display: none; }
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+  .result-text { font-size: 21px; font-weight: 900; color: #334155; margin-bottom: 4px; }
+  .result-sub  { font-size: 14px; font-weight: 600; color: #64748b; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+    padding: 12px 26px; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.14); }
+  .btn:active { transform: translateY(0); }
+  .btn-start { background: linear-gradient(135deg, #f97316, #facc15); color: white; }
+  .btn-check { background: linear-gradient(135deg, #22c55e, #4ecdc4); color: white; }
+  .btn-next  { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
+
+  @keyframes popIn    { 0%{transform:scale(0.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+  @keyframes shake    { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  @keyframes slideDown{ from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  @keyframes pulse-border { 0%,100%{border-color:#fed7aa} 50%{border-color:#f97316} }
+
+  .star { position:fixed; pointer-events:none; font-size:22px; animation:floatStar 1.4s ease-out forwards; z-index:200; }
+  @keyframes floatStar { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.5)} }
+
+  /* Responsive: stack grids on narrow screens */
+  @media (max-width: 500px) {
+    .grids-area { flex-direction: column; align-items: center; }
+    .grid-panel { width: 100%; flex: none; }
+  }
+
+  /* sequence mode: single grid shown, switch button */
+  .seq-btn {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800;
+    padding: 10px 22px; border: none; border-radius: 50px; cursor: pointer;
+    background: linear-gradient(135deg,#f97316,#facc15); color: white;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1); transition: all 0.2s; margin-bottom: 10px;
+  }
+  .seq-btn:hover { transform: translateY(-1px); }
+
+  /* blink mode */
+  .blink-label {
+    font-size: 13px; font-weight: 800; color: #94a3b8;
+    text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes blink-in { 0%{opacity:0;transform:scale(0.96)} 100%{opacity:1;transform:scale(1)} }
+  .blink-panel { animation: blink-in 0.18s ease; }
+
+  /* sequence mode fade */
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .fade-in { animation: fadeIn 0.25s ease; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <div class="logo">👀 Mi változott?</div>
+  <div class="subtitle">Keresd meg, mi változott a két képen!</div>
+</header>
+
+<div class="top-bar">
+  <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+</div>
+
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Elemtípus</label>
+      <select id="elem-type" onchange="updateElemType()">
+        <option value="emoji" selected>Emoji</option>
+        <option value="shape">Formák</option>
+        <option value="jelek">Jelek</option>
+      </select>
+    </div>
+    <div class="setting-group" id="emoji-cat-group">
+      <label>Kategória</label>
+      <select id="emoji-cat">
+        <option value="animals" selected>Állatok</option>
+        <option value="plants">Növények</option>
+        <option value="vehicles">Járművek</option>
+        <option value="mixed">Vegyes</option>
+      </select>
+    </div>
+    <div class="setting-group hidden" id="jelek-cat-group">
+      <label>Jelkészlet</label>
+      <select id="jelek-cat">
+        <option value="math" selected>Matematikai</option>
+        <option value="geo">Geometriai</option>
+        <option value="arrow">Nyilak</option>
+        <option value="basic">Alapjelek</option>
+        <option value="all">Mind a négy</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Rács mérete</label>
+      <select id="grid-size">
+        <option value="2">2 × 2</option>
+        <option value="3" selected>3 × 3</option>
+        <option value="4">4 × 4</option>
+        <option value="5">5 × 5</option>
+        <option value="6">6 × 6</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Változások száma</label>
+      <select id="change-count">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Változás típusa</label>
+      <select id="change-type">
+        <option value="replace" selected>Csere (más elem)</option>
+        <option value="swap">Felcserélés (két cella helyet cserél)</option>
+        <option value="both">Mindkettő</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Megjelenítés</label>
+      <select id="display-mode">
+        <option value="side" selected>Egymás mellett</option>
+        <option value="sequence">Egymás után</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Időlimit</label>
+      <select id="time-limit">
+        <option value="0">Nincs</option>
+        <option value="15">15 mp</option>
+        <option value="30" selected>30 mp</option>
+        <option value="60">60 mp</option>
+        <option value="90">90 mp</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="game-container">
+  <div class="status-bar"><div class="status-msg" id="status-msg">Nyomj a Start gombra!</div></div>
+
+  <div class="timer-bar hidden" id="timer-bar">
+    <span style="font-size:14px;font-weight:800;color:#64748b">⏱</span>
+    <div class="timer-display" id="timer-display">30</div>
+  </div>
+
+  <div class="progress-wrap hidden" id="progress-wrap">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- side-by-side mode -->
+  <div class="grids-area hidden" id="grids-area">
+    <div class="grid-panel">
+      <div class="grid-panel-label">Előtte</div>
+      <div class="cell-grid" id="grid-before"></div>
+    </div>
+    <div class="grid-panel">
+      <div class="grid-panel-label">Utána – kattints a változásra!</div>
+      <div class="cell-grid" id="grid-after"></div>
+    </div>
+  </div>
+
+  <!-- sequence mode: one grid at a time -->
+  <div class="hidden" id="seq-area">
+    <div class="grid-panel" style="max-width:340px;margin:0 auto 12px;">
+      <div class="blink-label" id="seq-label">Előtte</div>
+      <button class="seq-btn" id="seq-toggle-btn" onclick="seqToggle()">Mutasd az "Utána" képet →</button>
+      <div class="cell-grid" id="grid-seq"></div>
+    </div>
+  </div>
+
+  <!-- blink mode: alternating single grid -->
+  <div class="hidden" id="blink-area">
+    <div class="grid-panel" style="max-width:340px;margin:0 auto 12px;">
+      <div class="blink-label" id="blink-label">Előtte</div>
+      <div class="cell-grid blink-panel" id="grid-blink"></div>
+    </div>
+    <div style="text-align:center;margin-bottom:10px;">
+      <button class="seq-btn" id="blink-stop-btn" onclick="stopBlink()">Megállít – keresem!</button>
+    </div>
+  </div>
+
+  <div class="result-banner" id="result-banner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub" id="result-sub"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-start" id="start-btn" onclick="startGame()">🚀 Start</button>
+    <button class="btn btn-check hidden" id="check-btn" onclick="checkAnswer()">Ellenőrzés</button>
+    <button class="btn btn-next  hidden" id="next-btn"  onclick="startGame()">Következő ▶</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const EMOJI_POOLS = {
+  animals:  ['🐶','🐱','🐰','🦊','🐻','🐼','🐯','🐮','🐷','🐸','🐵','🦁','🐧','🦉','🐺'],
+  plants:   ['🌵','🍄','🌴','🌻','🍁','🍀','🌾','🎋','🌲','🪨'],
+  vehicles: ['🚂','✈️','🚀','🚁','⛵','🚒','🚑','🛸','🚜','🏍'],
+};
+const COLORS = [{id:'red',hex:'#ef4444'},{id:'yellow',hex:'#facc15'},{id:'green',hex:'#22c55e'},{id:'blue',hex:'#3b82f6'}];
+const SHAPES_LIST = ['circle','square','triangle'];
+const JELEK_POOLS = {
+  math:  ['math:plus','math:minus','math:times','math:div','math:eq','math:lt','math:gt'],
+  geo:   ['geo:star','geo:heart','geo:diamond','geo:spade','geo:club'],
+  arrow: ['arrow:left','arrow:up','arrow:right','arrow:down','arrow:nw','arrow:ne'],
+  basic: ['basic:slash','basic:bslash','basic:pipe','basic:at','basic:hash','basic:tilde'],
+};
+
+let GS = {};
+let settingsOpen = false;
+let timerInterval = null;
+
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function setStatus(m){document.getElementById('status-msg').textContent=m;}
+function spawnStars(x,y,n){['⭐','🌟','✨','💫'].slice(0,n).forEach((s,i)=>{const e=document.createElement('div');e.className='star';e.textContent=s;e.style.left=(x+(Math.random()-.5)*80)+'px';e.style.top=(y+(Math.random()-.5)*40)+'px';e.style.animationDelay=(i*.1)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),1800);});}
+
+function toggleSettings(){settingsOpen=!settingsOpen;document.getElementById('settings-panel').classList.toggle('open',settingsOpen);}
+function updateElemType(){
+  const v=document.getElementById('elem-type').value;
+  document.getElementById('emoji-cat-group').classList.toggle('hidden',v!=='emoji');
+  document.getElementById('jelek-cat-group').classList.toggle('hidden',v!=='jelek');
+}
+
+// ── SVG ──
+function makeShapeSVG(colorId,shape){
+  const hex=COLORS.find(c=>c.id===colorId)?.hex||'#888';
+  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 48 48');svg.classList.add('shape');
+  let el;
+  if(shape==='circle'){el=document.createElementNS(ns,'circle');el.setAttribute('cx','24');el.setAttribute('cy','24');el.setAttribute('r','20');}
+  else if(shape==='square'){el=document.createElementNS(ns,'rect');el.setAttribute('x','4');el.setAttribute('y','4');el.setAttribute('width','40');el.setAttribute('height','40');el.setAttribute('rx','4');}
+  else{el=document.createElementNS(ns,'polygon');el.setAttribute('points','24,4 44,44 4,44');}
+  el.setAttribute('fill',hex);el.setAttribute('stroke','rgba(0,0,0,0.10)');el.setAttribute('stroke-width','1.5');
+  svg.appendChild(el);return svg;
+}
+
+function makeJelSVG(key){
+  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 48 48');svg.classList.add('shape');
+  const lc='#1e293b',sw='4';
+  const[cat,id]=key.split(':');
+  const aL=(x1,y1,x2,y2)=>{const l=document.createElementNS(ns,'line');l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke',lc);l.setAttribute('stroke-width',sw);l.setAttribute('stroke-linecap','round');svg.appendChild(l);};
+  const aPL=(pts)=>{const p=document.createElementNS(ns,'polyline');p.setAttribute('points',pts);p.setAttribute('stroke',lc);p.setAttribute('stroke-width',sw);p.setAttribute('fill','none');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');svg.appendChild(p);};
+  const aPG=(pts)=>{const p=document.createElementNS(ns,'polygon');p.setAttribute('points',pts);p.setAttribute('fill',lc);svg.appendChild(p);};
+  const aC=(cx,cy,r)=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill',lc);svg.appendChild(c);};
+  const aPath=(d,fill,stroke)=>{const p=document.createElementNS(ns,'path');p.setAttribute('d',d);if(fill)p.setAttribute('fill',lc);if(stroke){p.setAttribute('stroke',lc);p.setAttribute('stroke-width',sw);p.setAttribute('fill','none');p.setAttribute('stroke-linecap','round');}svg.appendChild(p);};
+  const aArr=(x1,y1,x2,y2)=>{aL(x1,y1,x2,y2);const a=Math.atan2(y2-y1,x2-x1),len=10;aL(x2,y2,Math.round(x2+len*Math.cos(a+Math.PI*.75)),Math.round(y2+len*Math.sin(a+Math.PI*.75)));aL(x2,y2,Math.round(x2+len*Math.cos(a-Math.PI*.75)),Math.round(y2+len*Math.sin(a-Math.PI*.75)));};
+  const sPts=(cx,cy,o,i2,n)=>{const p=[];for(let j=0;j<n*2;j++){const r=j%2===0?o:i2,a=Math.PI/n*j-Math.PI/2;p.push(Math.round(cx+r*Math.cos(a))+','+Math.round(cy+r*Math.sin(a)));}return p.join(' ');};
+  if(cat==='math'){
+    if(id==='plus'){aL(24,8,24,40);aL(8,24,40,24);}
+    else if(id==='minus')aL(8,24,40,24);
+    else if(id==='times'){aL(10,10,38,38);aL(38,10,10,38);}
+    else if(id==='div'){aL(8,24,40,24);aC(24,12,3.5);aC(24,36,3.5);}
+    else if(id==='eq'){aL(8,18,40,18);aL(8,30,40,30);}
+    else if(id==='lt')aPL('38,10 10,24 38,38');
+    else if(id==='gt')aPL('10,10 38,24 10,38');
+  }else if(cat==='geo'){
+    if(id==='star')aPG(sPts(24,24,20,8,5));
+    else if(id==='heart')aPath('M24,38 C24,38 6,26 6,16 C6,10 10,7 14,7 C18,7 22,10 24,13 C26,10 30,7 34,7 C38,7 42,10 42,16 C42,26 24,38 24,38 Z',true);
+    else if(id==='diamond')aPG('24,5 43,24 24,43 5,24');
+    else if(id==='spade')aPath('M24,4 C24,4 6,16 6,26 C6,32 10,36 16,34 C14,38 12,42 8,43 L40,43 C36,42 34,38 32,34 C38,36 42,32 42,26 C42,16 24,4 24,4 Z',true);
+    else if(id==='club')aPath('M24,4 C20,4 17,7 17,11 C17,13 18,15 19,16 C16,15 12,15 10,18 C8,21 9,25 12,27 C15,29 19,28 21,26 C19,30 17,36 14,39 L34,39 C31,36 29,30 27,26 C29,28 33,29 36,27 C39,25 40,21 38,18 C36,15 32,15 29,16 C30,15 31,13 31,11 C31,7 28,4 24,4 Z',true);
+  }else if(cat==='arrow'){
+    if(id==='left')aArr(40,24,8,24);else if(id==='right')aArr(8,24,40,24);
+    else if(id==='up')aArr(24,40,24,8);else if(id==='down')aArr(24,8,24,40);
+    else if(id==='nw')aArr(38,38,10,10);else if(id==='ne')aArr(10,38,38,10);
+  }else if(cat==='basic'){
+    if(id==='slash')aL(34,8,14,40);else if(id==='bslash')aL(14,8,34,40);
+    else if(id==='pipe')aL(24,6,24,42);
+    else if(id==='hash'){aL(16,8,12,40);aL(28,8,24,40);aL(7,18,41,18);aL(6,30,40,30);}
+    else if(id==='at')aPath('M30,18 C28,14 24,12 20,14 C16,16 14,20 15,25 C16,30 20,33 25,32 C28,31 30,29 30,26 L30,18 M30,26 C30,30 33,33 37,32 C41,31 43,26 42,21 C40,13 33,8 25,8 C16,8 9,15 9,24 C9,33 16,40 25,40 C29,40 32,39 35,37',false,true);
+    else if(id==='tilde')aPath('M8,24 C12,16 16,16 20,24 C24,32 28,32 32,24 C36,16 40,16 42,20',false,true);
+  }
+  return svg;
+}
+
+function renderKey(elemType,key){
+  if(elemType==='emoji'){const s=document.createElement('span');s.textContent=key;return s;}
+  if(elemType==='jelek')return makeJelSVG(key);
+  const[col,sh]=key.split('_');return makeShapeSVG(col,sh);
+}
+
+// ── BUILD POOL ──
+function buildPool(elemType){
+  if(elemType==='emoji'){
+    const cat=document.getElementById('emoji-cat').value;
+    if(cat==='mixed')return shuffle([...EMOJI_POOLS.animals,...EMOJI_POOLS.plants,...EMOJI_POOLS.vehicles]);
+    return shuffle([...EMOJI_POOLS[cat]]);
+  }
+  if(elemType==='jelek'){
+    const cat=document.getElementById('jelek-cat').value;
+    if(cat==='all')return shuffle([...JELEK_POOLS.math,...JELEK_POOLS.geo,...JELEK_POOLS.arrow,...JELEK_POOLS.basic]);
+    return shuffle([...JELEK_POOLS[cat]]);
+  }
+  const keys=[];
+  COLORS.forEach(c=>SHAPES_LIST.forEach(s=>keys.push(c.id+'_'+s)));
+  return shuffle(keys);
+}
+
+// ── GENERATE PUZZLE ──
+function generatePuzzle(){
+  const elemType   = document.getElementById('elem-type').value;
+  const gridSize   = parseInt(document.getElementById('grid-size').value);
+  const changeCount= parseInt(document.getElementById('change-count').value);
+  const changeType = document.getElementById('change-type').value;
+  const timeLimit  = parseInt(document.getElementById('time-limit').value);
+
+  const pool = buildPool(elemType);
+  const total = gridSize * gridSize;
+
+  // Build "before" grid: pick unique keys for all cells
+  const before = [];
+  for(let i=0;i<total;i++){
+    before.push(pool[i % pool.length]);
+  }
+
+  // Make "after" grid as a copy
+  const after = [...before];
+
+  // Pick which cells to change (no duplicates)
+  const indices = shuffle([...Array(total).keys()]);
+  const toChange = indices.slice(0, changeCount);
+  const changedCells = new Set(toChange);
+
+  // Apply changes
+  toChange.forEach((idx,ci) => {
+    const type = changeType === 'both'
+      ? (Math.random() < 0.5 ? 'replace' : 'swap')
+      : changeType;
+
+    if(type === 'swap' && ci + 1 < toChange.length){
+      // Swap this cell with the next changed cell
+      if(ci % 2 === 0){
+        const idx2 = toChange[ci+1];
+        const tmp = after[idx];
+        after[idx] = after[idx2];
+        after[idx2] = tmp;
+        changedCells.add(idx2);
+      }
+    } else {
+      // Replace with a different key
+      const current = after[idx];
+      const others = pool.filter(k => k !== current);
+      after[idx] = others.length > 0 ? rand(others) : pool[(pool.indexOf(current)+1) % pool.length];
+    }
+  });
+
+  return {
+    elemType, gridSize, changeCount, changeType, timeLimit,
+    before, after,
+    changedCells,    // Set of indices that actually differ
+    selectedCells: new Set(), // indices user marked in after grid
+    phase: 'playing',
+    timeLeft: timeLimit,
+  };
+}
+
+// ── START ──
+function startGame(){
+  clearInterval(timerInterval);
+  if(window._blinkInterval) clearInterval(window._blinkInterval);
+  GS = generatePuzzle();
+  GS.displayMode = document.getElementById('display-mode').value;
+  GS.seqShowingAfter = false;  // for sequence mode
+
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('start-btn').textContent='🔄 Új játék';
+  document.getElementById('start-btn').classList.remove('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('check-btn').classList.add('hidden'); // shown after blink stops or in side/seq
+  document.getElementById('progress-wrap').classList.remove('hidden');
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('progress-fill').style.background='linear-gradient(90deg,#f97316,#facc15)';
+
+  // Hide all display areas first
+  ['grids-area','seq-area','blink-area'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+
+  if(GS.displayMode==='side'){
+    document.getElementById('grids-area').classList.remove('hidden');
+    document.getElementById('check-btn').classList.remove('hidden');
+    renderGrids();
+    setStatus('Kattints az "Utána" képen, ami megváltozott!');
+
+  } else if(GS.displayMode==='sequence'){
+    document.getElementById('seq-area').classList.remove('hidden');
+    document.getElementById('check-btn').classList.add('hidden');
+    renderSeqGrid(false); // show "before" first
+    setStatus('Nézd meg az "Előtte" képet, majd kattints a gombra!');
+
+  } else { // blink
+    document.getElementById('blink-area').classList.remove('hidden');
+    document.getElementById('check-btn').classList.add('hidden');
+    startBlink();
+    setStatus('Figyeld a váltakozó képeket, majd állítsd meg!');
+  }
+
+  if(GS.timeLimit>0){
+    document.getElementById('timer-bar').classList.remove('hidden');
+    GS.timeLeft=GS.timeLimit;
+    updateTimer();
+    timerInterval=setInterval(tickTimer,1000);
+  } else {
+    document.getElementById('timer-bar').classList.add('hidden');
+  }
+}
+
+// ── TIMER ──
+function tickTimer(){
+  if(GS.phase!=='playing'){clearInterval(timerInterval);return;}
+  GS.timeLeft--;
+  updateTimer();
+  if(GS.timeLeft<=0){clearInterval(timerInterval);checkAnswer();}
+}
+function updateTimer(){
+  const d=document.getElementById('timer-display');
+  d.textContent=GS.timeLeft+' mp';
+  d.classList.toggle('warning',GS.timeLeft<=10);
+}
+
+// ── RENDER GRIDS ──
+function renderGrids(){
+  renderOneGrid('grid-before', GS.before, false);
+  renderOneGrid('grid-after',  GS.after,  true);
+}
+
+// ── SEQUENCE MODE ──
+function renderSeqGrid(showAfter){
+  const cells = showAfter ? GS.after : GS.before;
+  const clickable = showAfter;
+  document.getElementById('seq-label').textContent = showAfter ? 'Utána – kattints a változásra!' : 'Előtte';
+  document.getElementById('seq-toggle-btn').textContent = showAfter ? '← Vissza az "Előtte" képhez' : 'Mutasd az "Utána" képet →';
+  if(showAfter && GS.phase==='playing'){
+    document.getElementById('check-btn').classList.remove('hidden');
+  }
+  renderOneGrid('grid-seq', cells, clickable);
+  document.getElementById('grid-seq').classList.add('fade-in');
+}
+
+function seqToggle(){
+  if(GS.phase!=='playing') return;
+  GS.seqShowingAfter = !GS.seqShowingAfter;
+  renderSeqGrid(GS.seqShowingAfter);
+  setStatus(GS.seqShowingAfter ? 'Kattints, ami megváltozott!' : 'Nézd meg jól az "Előtte" képet!');
+}
+
+// ── BLINK MODE ──
+let _blinkState = false;
+function startBlink(){
+  _blinkState = false;
+  renderBlinkGrid();
+  window._blinkInterval = setInterval(()=>{
+    if(GS.phase!=='playing'){clearInterval(window._blinkInterval);return;}
+    _blinkState = !_blinkState;
+    renderBlinkGrid();
+  }, 900);
+}
+
+function renderBlinkGrid(){
+  const cells = _blinkState ? GS.after : GS.before;
+  document.getElementById('blink-label').textContent = _blinkState ? 'Utána' : 'Előtte';
+  renderOneGrid('grid-blink', cells, false);
+  document.getElementById('grid-blink').classList.add('blink-panel');
+}
+
+function stopBlink(){
+  clearInterval(window._blinkInterval);
+  // Show after grid for clicking
+  document.getElementById('blink-area').classList.add('hidden');
+  document.getElementById('grids-area').classList.remove('hidden');
+  renderGrids();
+  document.getElementById('check-btn').classList.remove('hidden');
+  document.getElementById('blink-stop-btn');
+  setStatus('Most kattints az "Utána" képen a változásra!');
+}
+
+function renderOneGrid(id, cells, clickable){
+  const el=document.getElementById(id);
+  const sz=GS.gridSize;
+
+  // Responsive cell size: fit two grids side by side
+  const maxW=Math.min(700,window.innerWidth-40);
+  const halfW=Math.floor((maxW-12)/2)-24; // subtract gap and padding
+  const cs=Math.floor((halfW-(sz-1)*4)/sz);
+  const safCs=Math.max(28,Math.min(cs,80));
+
+  el.style.gridTemplateColumns=`repeat(${sz},${safCs}px)`;
+  el.innerHTML='';
+
+  cells.forEach((key,idx)=>{
+    const cell=document.createElement('div');
+    cell.className='grid-cell'+(clickable?' clickable':'');
+    cell.style.width=safCs+'px';cell.style.height=safCs+'px';
+    cell.style.fontSize=Math.floor(safCs*.5)+'px';
+    cell.style.borderRadius=Math.floor(safCs*.18)+'px';
+    cell.dataset.idx=idx;
+
+    const inner=renderKey(GS.elemType,key);
+    if(inner.tagName==='svg'){inner.style.width=Math.floor(safCs*.6)+'px';inner.style.height=Math.floor(safCs*.6)+'px';}
+    cell.appendChild(inner);
+
+    if(clickable) cell.addEventListener('click',()=>onAfterCellClick(idx,cell));
+    el.appendChild(cell);
+  });
+}
+
+// ── CLICK ON AFTER GRID ──
+function onAfterCellClick(idx, cell){
+  if(GS.phase!=='playing') return;
+
+  if(GS.selectedCells.has(idx)){
+    // Deselect
+    GS.selectedCells.delete(idx);
+    cell.classList.remove('selected');
+  } else {
+    // Select
+    GS.selectedCells.add(idx);
+    cell.classList.add('selected');
+  }
+
+  const n=GS.selectedCells.size;
+  const total=GS.changedCells.size;
+  setStatus(`${n} hely megjelölve – nyomj Ellenőrzésre ha kész!`);
+}
+
+// ── CHECK ──
+function checkAnswer(){
+  if(GS.phase!=='playing') return;
+  clearInterval(timerInterval);
+  clearInterval(window._blinkInterval);
+  GS.phase='done';
+  document.getElementById('check-btn').classList.add('hidden');
+
+  // For seq mode: ensure after grid is visible for result display
+  if(GS.displayMode==='sequence'){
+    document.getElementById('grids-area').classList.remove('hidden');
+    document.getElementById('seq-area').classList.add('hidden');
+    renderOneGrid('grid-before', GS.before, false);
+    renderOneGrid('grid-after', GS.after, false);
+  }
+
+  let correct=0, wrong=0, missed=0;
+
+  const afterCells=document.getElementById('grid-after').querySelectorAll('.grid-cell');
+  const beforeCells=document.getElementById('grid-before').querySelectorAll('.grid-cell');
+
+  afterCells.forEach((cell,idx)=>{
+    cell.classList.remove('selected','clickable');
+    const isChanged=GS.changedCells.has(idx);
+    const isSelected=GS.selectedCells.has(idx);
+
+    if(isChanged && isSelected){
+      cell.classList.add('correct'); correct++;
+      const r=cell.getBoundingClientRect();
+      setTimeout(()=>spawnStars(r.left+r.width/2,r.top,3),idx*60);
+      // Also highlight the original cell in the before grid
+      if(beforeCells[idx]) beforeCells[idx].classList.add('changed-orig');
+    } else if(!isChanged && isSelected){
+      cell.classList.add('wrong'); wrong++;
+    } else if(isChanged && !isSelected){
+      cell.classList.add('missed'); missed++;
+      if(beforeCells[idx]) beforeCells[idx].classList.add('changed-orig');
+    }
+  });
+
+  // Update progress
+  const total=GS.changedCells.size;
+  document.getElementById('progress-fill').style.width=(correct/total*100)+'%';
+
+  let icon,text,sub;
+  if(correct===total && wrong===0){
+    icon='🎉'; text='Tökéletes! Mindent megtaláltál!';
+    sub=`${correct} változás megtalálva, 0 tévedés`;
+  } else if(correct===total){
+    icon='👍'; text='Mindent megtaláltál!';
+    sub=`${correct}/${total} helyes, de ${wrong} téves jelölés is volt`;
+  } else if(correct>0){
+    icon='🙈'; text='Majdnem!';
+    sub=`${correct}/${total} helyes, ${wrong} téves, ${missed} kihagyott`;
+  } else {
+    icon='😮'; text='Próbáld újra!';
+    sub=`0/${total} – az arany keret mutatja az eredetiben is`;
+  }
+
+  setStatus(icon+' '+text);
+  document.getElementById('result-text').textContent=icon+' '+text;
+  document.getElementById('result-sub').textContent=sub;
+  const banner=document.getElementById('result-banner');
+  banner.style.display='block'; banner.classList.add('show');
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('start-btn').classList.add('hidden');
+}
+</script>
+</body>
+</html>

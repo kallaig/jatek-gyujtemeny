@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emlékező Játék</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #ff6b6b;
+    --teal: #4ecdc4;
+    --purple: #a855f7;
+    --yellow: #fbbf24;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --bg: #f0f9ff;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,200,100,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(100,200,255,0.15) 0%, transparent 40%);
+    overflow-x: hidden;
+  }
+
+  header { text-align: center; padding: 22px 20px 8px; }
+
+  .logo {
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 900;
+    color: #f97316;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle { font-size: 15px; color: #64748b; font-weight: 600; margin-top: 4px; }
+
+  .mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 20px 8px;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 11px 22px;
+    border: 3px solid #e2e8f0;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    color: #64748b;
+    box-shadow: var(--shadow);
+  }
+
+  .mode-btn.active[data-mode="grid"] {
+    background: linear-gradient(135deg, #3b82f6, #4ecdc4);
+    color: white; border-color: transparent;
+    box-shadow: 0 6px 20px rgba(59,130,246,0.35);
+    transform: translateY(-2px);
+  }
+
+  .mode-btn.active[data-mode="row"] {
+    background: linear-gradient(135deg, #f97316, #ec4899);
+    color: white; border-color: transparent;
+    box-shadow: 0 6px 20px rgba(249,115,22,0.35);
+    transform: translateY(-2px);
+  }
+
+  .mode-btn:hover:not(.active) { transform: translateY(-1px); }
+
+  .game-container { max-width: 700px; margin: 0 auto; padding: 0 16px 40px; }
+
+  /* SETTINGS */
+  .settings-toggle-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 700;
+    padding: 8px 18px;
+    border: 2px solid #e2e8f0; border-radius: 50px;
+    cursor: pointer; background: white; color: #64748b;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.2s;
+  }
+
+  .settings-toggle-btn:hover { border-color: var(--teal); color: #334155; }
+
+  .settings-panel {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 14px;
+    overflow: hidden; max-height: 0;
+    transition: max-height 0.35s ease, padding 0.3s ease;
+    padding: 0 24px;
+  }
+
+  .settings-panel.open { max-height: 400px; padding: 20px 24px; }
+
+  .settings-grid { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+
+  .setting-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; }
+
+  .setting-group label {
+    font-size: 12px; font-weight: 800; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .setting-group select {
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0;
+    border-radius: 12px; padding: 8px 12px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+
+  .setting-group select:focus { border-color: var(--teal); }
+
+  .range-val { font-size: 13px; font-weight: 800; color: var(--purple); text-align: center; }
+
+  input[type="range"] { padding: 4px 0; accent-color: var(--purple); width: 100%; cursor: pointer; }
+
+  /* STATUS */
+  .status-bar {
+    background: white; border-radius: var(--radius);
+    padding: 14px 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow); text-align: center;
+  }
+
+  .status-msg { font-size: 18px; font-weight: 800; color: #334155; }
+
+  /* GRID */
+  .grid-wrapper { display: flex; justify-content: center; margin-bottom: 20px; }
+  .game-grid { display: grid; gap: 10px; }
+
+  .grid-cell {
+    width: 90px; height: 90px;
+    background: white; border-radius: 18px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; cursor: pointer;
+    transition: all 0.2s; border: 3px solid #e2e8f0;
+    user-select: none; position: relative;
+  }
+
+  .grid-cell:hover { transform: scale(1.05); }
+
+  .grid-cell.show-emoji {
+    background: linear-gradient(135deg, #e0f2fe, #f0fdf4);
+    border-color: var(--teal);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .grid-cell.awaiting {
+    border-color: var(--purple);
+    background: linear-gradient(135deg, #f3e8ff, #ede9fe);
+    animation: pulse-border 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(168,85,247,0); }
+  }
+
+  .grid-cell.correct {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border-color: var(--green); animation: celebrate 0.4s ease;
+  }
+
+  .grid-cell.wrong {
+    background: linear-gradient(135deg, #fee2e2, #fca5a5);
+    border-color: var(--coral); animation: shake 0.4s ease;
+  }
+
+  /* cell with a placed emoji in "what+where" mode before check */
+  .grid-cell.placed {
+    background: linear-gradient(135deg, #fef9c3, #fef3c7);
+    border-color: var(--yellow);
+  }
+
+  /* small clear X on placed cell */
+  .cell-clear {
+    position: absolute; top: 4px; right: 6px;
+    font-size: 13px; color: #94a3b8; font-weight: 900;
+    line-height: 1; cursor: pointer;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes celebrate {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.15) rotate(5deg); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  /* ===== EMOJI POPUP ===== */
+  .emoji-popup-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 150; backdrop-filter: blur(3px);
+  }
+
+  .emoji-popup {
+    background: white; border-radius: 24px;
+    padding: 20px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    max-width: 340px; width: 90%;
+    animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .emoji-popup-title {
+    font-size: 15px; font-weight: 800; color: #64748b;
+    text-align: center; margin-bottom: 14px;
+  }
+
+  .emoji-popup-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  }
+
+  .popup-emoji-btn {
+    width: 56px; height: 56px;
+    font-size: 30px;
+    background: #f8fafc; border-radius: 14px;
+    border: 3px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+
+  .popup-emoji-btn:hover {
+    background: #eff6ff; border-color: var(--blue); transform: scale(1.12);
+  }
+
+  .popup-emoji-btn.already-used {
+    opacity: 0.25; pointer-events: none;
+  }
+
+  .popup-cancel {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 700;
+    width: 100%; margin-top: 14px;
+    padding: 10px; border-radius: 50px;
+    border: 2px solid #e2e8f0;
+    background: #f8fafc; color: #64748b;
+    cursor: pointer; transition: all 0.15s;
+  }
+
+  .popup-cancel:hover { border-color: var(--coral); color: var(--coral); }
+
+  /* check button for what+where mode */
+  .btn-check-grid {
+    background: linear-gradient(135deg, #22c55e, #4ecdc4);
+    color: white;
+  }
+
+  /* ROW MODE */
+  .row-game-area { display: flex; flex-direction: column; gap: 14px; }
+
+  .row-label {
+    font-size: 13px; font-weight: 800; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+
+  .row-cells { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  .row-cell {
+    width: 80px; height: 80px; background: white; border-radius: 16px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 38px; border: 3px solid #e2e8f0;
+    transition: all 0.2s; cursor: default;
+  }
+
+  .row-cell.top-cell { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #93c5fd; }
+  .row-cell.top-cell.hidden-emoji { background: white; }
+  .row-cell.top-cell.hidden-emoji::after { content: '?'; font-size: 30px; color: #cbd5e1; font-weight: 900; }
+
+  .row-cell.drop-target { background: #f8fafc; border: 3px dashed #cbd5e1; cursor: pointer; }
+  .row-cell.drop-target:hover { border-color: var(--teal); background: #f0fdfa; }
+
+  .row-cell.drop-target.filled {
+    background: linear-gradient(135deg, #fef9c3, #fef3c7);
+    border-color: var(--yellow); border-style: solid; cursor: pointer;
+  }
+
+  .row-cell.correct { background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important; border-color: var(--green) !important; border-style: solid !important; }
+  .row-cell.wrong { background: linear-gradient(135deg, #fee2e2, #fca5a5) !important; border-color: var(--coral) !important; border-style: solid !important; }
+  .row-cell.empty-slot { background: #f8fafc !important; border-color: #cbd5e1 !important; border-style: dashed !important; }
+
+  /* PALETTE */
+  .palette-section { background: white; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .palette-label { font-size: 13px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  .palette-item {
+    width: 64px; height: 64px; background: #f8fafc;
+    border-radius: 14px; border: 3px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+
+  .palette-item:hover { background: #eff6ff; border-color: var(--blue); transform: scale(1.1); }
+  .palette-item.selected-palette { border-color: var(--teal); background: #f0fdfa; outline: 3px solid var(--teal); outline-offset: 2px; transform: scale(1.08); }
+  .palette-item.used { opacity: 0.25; pointer-events: none; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px; font-weight: 800;
+    padding: 13px 28px; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(0); }
+  .btn-start { background: linear-gradient(135deg, #3b82f6, #4ecdc4); color: white; }
+  .btn-check { background: linear-gradient(135deg, #22c55e, #4ecdc4); color: white; }
+  .btn-clear { background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; }
+
+  /* RESULT */
+  .result-banner {
+    background: white; border-radius: var(--radius);
+    padding: 20px; text-align: center;
+    box-shadow: var(--shadow); margin-top: 16px; display: none;
+  }
+
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-text { font-size: 22px; font-weight: 900; margin-bottom: 6px; color: #334155; }
+  .result-sub { font-size: 15px; color: #64748b; font-weight: 600; }
+
+  /* COUNTDOWN */
+  .countdown-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+
+  .countdown-box {
+    background: white; border-radius: 30px;
+    padding: 40px 60px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+
+  .countdown-num { font-size: 80px; font-weight: 900; color: #f97316; line-height: 1; animation: pulse 0.8s ease-in-out infinite; }
+  .countdown-txt { font-size: 18px; font-weight: 700; color: #64748b; margin-top: 8px; }
+
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+  .star { position: fixed; pointer-events: none; font-size: 24px; animation: floatStar 1.5s ease-out forwards; z-index: 200; }
+
+  @keyframes floatStar {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+  }
+
+  @media (max-width: 480px) {
+    .grid-cell { width: 72px; height: 72px; font-size: 36px; border-radius: 14px; }
+    .row-cell { width: 66px; height: 66px; font-size: 32px; }
+    .palette-item { width: 56px; height: 56px; font-size: 28px; }
+  }
+
+  @media (max-width: 360px) {
+    .grid-cell { width: 60px; height: 60px; font-size: 30px; }
+    .game-grid { gap: 6px; }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <div class="logo">🧠 Emlékező Játék</div>
+  <div class="subtitle">Fejleszd a figyelmed és emlékezeted!</div>
+</header>
+
+<div class="mode-selector">
+  <button class="mode-btn active" data-mode="grid" onclick="switchMode('grid')">🔲 Rácskeresés</button>
+  <button class="mode-btn" data-mode="row" onclick="switchMode('row')">🔁 Sor Kirakós</button>
+</div>
+
+<div class="game-container">
+
+  <div class="settings-toggle-row">
+    <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+  </div>
+
+  <div class="settings-panel" id="settings-panel">
+    <!-- Grid settings -->
+    <div class="settings-grid" id="grid-settings">
+      <div class="setting-group">
+        <label>Rács mérete</label>
+        <select id="grid-size" onchange="updateGridSettings()">
+          <option value="2">2 × 2</option>
+          <option value="3" selected>3 × 3</option>
+          <option value="4">4 × 4</option>
+          <option value="5">5 × 5</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Ábrák száma</label>
+        <select id="emoji-count">
+          <option value="1">1 ábra</option>
+          <option value="2" selected>2 ábra</option>
+          <option value="3">3 ábra</option>
+          <option value="4">4 ábra</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Feladattípus</label>
+        <select id="grid-task-type">
+          <option value="where">Hol volt?</option>
+          <option value="what-where">Mi és hol volt?</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Bemutatási idő</label>
+        <input type="range" id="show-time" min="1" max="10" value="3"
+          oninput="document.getElementById('show-time-val').textContent=this.value+' mp'">
+        <div class="range-val" id="show-time-val">3 mp</div>
+      </div>
+    </div>
+
+    <!-- Row settings -->
+    <div class="settings-grid hidden" id="row-settings">
+      <div class="setting-group">
+        <label>Bemutatott elemek</label>
+        <select id="row-show-count">
+          <option value="1">1 ábra</option>
+          <option value="2">2 ábra</option>
+          <option value="3" selected>3 ábra</option>
+          <option value="4">4 ábra</option>
+          <option value="5">5 ábra</option>
+          <option value="6">6 ábra</option>
+          <option value="7">7 ábra</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Extra elemek (nehezítés)</label>
+        <select id="row-extra-count">
+          <option value="0">Nincs extra</option>
+          <option value="2" selected>+2 extra</option>
+          <option value="4">+4 extra</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Bemutatási idő</label>
+        <input type="range" id="row-show-time" min="1" max="10" value="3"
+          oninput="document.getElementById('row-show-time-val').textContent=this.value+' mp'">
+        <div class="range-val" id="row-show-time-val">3 mp</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-msg" id="status-msg">Nyomj a Start gombra!</div>
+  </div>
+
+  <div id="game-area">
+
+    <!-- GRID MODE -->
+    <div id="grid-mode-area">
+      <div class="grid-wrapper">
+        <div class="game-grid" id="game-grid"></div>
+      </div>
+      <div class="result-banner" id="grid-result">
+        <div class="result-text" id="grid-result-text"></div>
+        <div class="result-sub" id="grid-result-sub"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-start" onclick="startGridGame()">🚀 Start</button>
+        <button class="btn btn-check hidden" id="grid-check-btn" onclick="checkWhatWhereAnswer()">Ellenőrzés</button>
+        <button class="btn btn-clear hidden" id="grid-clear-btn" onclick="clearWhatWhere()">Töröl</button>
+      </div>
+    </div>
+
+    <!-- ROW MODE -->
+    <div id="row-mode-area" class="hidden">
+      <div class="row-game-area">
+        <div>
+          <div class="row-label">👀 Nézd meg!</div>
+          <div class="row-cells" id="top-row"></div>
+        </div>
+        <div>
+          <div class="row-label">✏️ Rakd ki emlékezetből!</div>
+          <div class="row-cells" id="bottom-row"></div>
+        </div>
+        <div class="palette-section">
+          <div class="palette-label">Válassz innen</div>
+          <div class="palette" id="emoji-palette"></div>
+        </div>
+      </div>
+
+      <div class="result-banner" id="row-result">
+        <div class="result-text" id="row-result-text"></div>
+        <div class="result-sub" id="row-result-sub"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-start" onclick="startRowGame()">🚀 Start</button>
+        <button class="btn btn-check hidden" id="check-btn" onclick="checkRowAnswer()">Ellenőrzés</button>
+        <button class="btn btn-clear hidden" id="clear-btn" onclick="clearBottomRow()">Töröl</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div class="countdown-overlay hidden" id="countdown-overlay">
+  <div class="countdown-box">
+    <div class="countdown-num" id="countdown-num">3</div>
+    <div class="countdown-txt" id="countdown-txt">Figyeld az ábrákat!</div>
+  </div>
+</div>
+
+<!-- EMOJI POPUP (for what+where mode) -->
+<div class="emoji-popup-overlay hidden" id="emoji-popup-overlay" onclick="closeEmojiPopup(event)">
+  <div class="emoji-popup" id="emoji-popup">
+    <div class="emoji-popup-title">Melyik ábra volt itt?</div>
+    <div class="emoji-popup-grid" id="popup-emoji-grid"></div>
+    <button class="popup-cancel" onclick="closeEmojiPopup()">Mégsem</button>
+  </div>
+</div>
+
+<script>
+const EMOJIS = [
+  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵',
+  '🐔','🐧','🦆','🦉','🦋','🐝','🐢','🦎','🐠','🐡','🦑','🦞','🦀','🐙','🦜',
+  '🌸','🌹','🌻','🌼','🌺','🍀','🌿','🌵','🍁','🌱','🍄','🪴',
+  '🚗','🚕','🚙','🚌','🏎','🚓','🚑','🚒','🚂','✈️','🚀','🛸','🚁','⛵','🚤',
+  '🍎','🍊','🍋','🍇','🍓','🍒','🍑','🥭','🍍','🥝','🍕','🍔','🍩','🍦','🎂',
+];
+
+let currentMode = 'grid';
+let gameState = {};
+let settingsOpen = false;
+let selectedPaletteEmoji = null;
+let selectedPaletteEl = null;
+let rowState = {};
+
+// What+Where state
+let wwState = {}; // { cellIdx -> emoji } placed by user
+let pendingCellIdx = null; // which cell is awaiting emoji selection
+
+function shuffle(arr) {
+  let a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pick(arr, n) { return shuffle(arr).slice(0, n); }
+function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
+
+function spawnStars(x, y, count) {
+  const stars = ['⭐','🌟','✨','💫'];
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.textContent = stars[Math.floor(Math.random() * stars.length)];
+    s.style.left = (x + (Math.random()-0.5)*80) + 'px';
+    s.style.top = (y + (Math.random()-0.5)*40) + 'px';
+    s.style.animationDelay = (i*0.1) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1800);
+  }
+}
+
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.mode-btn[data-mode="${mode}"]`).classList.add('active');
+  document.getElementById('grid-mode-area').classList.toggle('hidden', mode !== 'grid');
+  document.getElementById('row-mode-area').classList.toggle('hidden', mode !== 'row');
+  document.getElementById('grid-settings').classList.toggle('hidden', mode !== 'grid');
+  document.getElementById('row-settings').classList.toggle('hidden', mode !== 'row');
+  setStatus('Nyomj a Start gombra!');
+  document.getElementById('grid-result').classList.remove('show');
+  document.getElementById('row-result').classList.remove('show');
+}
+
+function updateGridSettings() {
+  const size = parseInt(document.getElementById('grid-size').value);
+  const max = size * size;
+  const sel = document.getElementById('emoji-count');
+  Array.from(sel.options).forEach(o => { o.disabled = parseInt(o.value) > max; });
+  if (parseInt(sel.value) > max) sel.value = max;
+}
+
+// ===================== GRID GAME =====================
+function startGridGame() {
+  const size = parseInt(document.getElementById('grid-size').value);
+  const count = parseInt(document.getElementById('emoji-count').value);
+  const showTime = parseInt(document.getElementById('show-time').value);
+  const taskType = document.getElementById('grid-task-type').value;
+
+  const grid = document.getElementById('game-grid');
+  grid.style.gridTemplateColumns = `repeat(${size}, auto)`;
+  grid.innerHTML = '';
+
+  const total = size * size;
+  const emojis = pick(EMOJIS, count);
+  const positions = pick([...Array(total).keys()], count);
+
+  gameState = { size, count, emojis, positions, phase: 'showing', answered: [], correctClicks: 0, taskType };
+  wwState = {};
+  pendingCellIdx = null;
+
+  // Hide buttons
+  document.getElementById('grid-check-btn').classList.add('hidden');
+  document.getElementById('grid-clear-btn').classList.add('hidden');
+  document.getElementById('grid-result').classList.remove('show');
+
+  for (let i = 0; i < total; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell';
+    cell.dataset.idx = i;
+    const pos = positions.indexOf(i);
+    if (pos !== -1) {
+      cell.textContent = emojis[pos];
+      cell.classList.add('show-emoji');
+    }
+    grid.appendChild(cell);
+  }
+
+  setStatus('Jegyezd meg, hol vannak!');
+
+  setTimeout(() => {
+    grid.querySelectorAll('.grid-cell').forEach(c => {
+      c.textContent = '';
+      c.classList.remove('show-emoji');
+    });
+    gameState.phase = 'guessing';
+
+    if (taskType === 'where') {
+      setStatus('Kattints oda, ahol az ábra volt!');
+      grid.querySelectorAll('.grid-cell').forEach(c => c.addEventListener('click', onGridCellClick));
+    } else {
+      setStatus('Kattints egy cellára, és válaszd ki, mi volt ott!');
+      document.getElementById('grid-check-btn').classList.remove('hidden');
+      document.getElementById('grid-clear-btn').classList.remove('hidden');
+      grid.querySelectorAll('.grid-cell').forEach(c => c.addEventListener('click', onWhatWhereCellClick));
+    }
+  }, showTime * 1000);
+}
+
+// ---- "Hol volt?" mode ----
+function onGridCellClick(e) {
+  if (gameState.phase !== 'guessing') return;
+  const cell = e.currentTarget;
+  const idx = parseInt(cell.dataset.idx);
+  if (gameState.answered.includes(idx)) return;
+  gameState.answered.push(idx);
+  cell.removeEventListener('click', onGridCellClick);
+
+  if (gameState.positions.includes(idx)) {
+    cell.textContent = gameState.emojis[gameState.positions.indexOf(idx)];
+    cell.classList.add('correct');
+    gameState.correctClicks++;
+    const r = cell.getBoundingClientRect();
+    spawnStars(r.left + r.width/2, r.top + r.height/2, 4);
+    if (gameState.correctClicks === gameState.count) finishGridGame();
+  } else {
+    cell.classList.add('wrong');
+    cell.textContent = '✗';
+    setTimeout(() => {
+      const rem = gameState.positions.filter(p => !gameState.answered.includes(p));
+      if (rem.length === 0) finishGridGame();
+      else setStatus(`Nem ott volt! Még ${rem.length} ábra maradt.`);
+    }, 500);
+  }
+}
+
+function finishGridGame() {
+  gameState.phase = 'done';
+  document.getElementById('game-grid').querySelectorAll('.grid-cell').forEach(c => {
+    c.removeEventListener('click', onGridCellClick);
+    const idx = parseInt(c.dataset.idx);
+    if (gameState.positions.includes(idx) && !c.classList.contains('correct')) {
+      c.textContent = gameState.emojis[gameState.positions.indexOf(idx)];
+      c.classList.add('show-emoji');
+    }
+  });
+
+  const correct = gameState.correctClicks, total = gameState.count;
+  showGridResult(correct, total);
+}
+
+// ---- "Mi és hol volt?" mode ----
+function onWhatWhereCellClick(e) {
+  if (gameState.phase !== 'guessing') return;
+  const cell = e.currentTarget;
+  const idx = parseInt(cell.dataset.idx);
+
+  // If already has a placed emoji, remove it on click
+  if (wwState[idx] !== undefined) {
+    delete wwState[idx];
+    cell.textContent = '';
+    cell.classList.remove('placed');
+    const x = cell.querySelector('.cell-clear');
+    if (x) x.remove();
+    return;
+  }
+
+  // Open popup
+  pendingCellIdx = idx;
+
+  // Highlight awaiting cell
+  document.getElementById('game-grid').querySelectorAll('.grid-cell').forEach(c => c.classList.remove('awaiting'));
+  cell.classList.add('awaiting');
+
+  openEmojiPopup();
+}
+
+function openEmojiPopup() {
+  const grid = document.getElementById('popup-emoji-grid');
+  grid.innerHTML = '';
+
+  // show all emojis used in this game (plus some distractors if count is small)
+  // Show a set: the actual emojis + distractors to make it 8 total
+  const actual = gameState.emojis;
+  const distractors = pick(EMOJIS.filter(e => !actual.includes(e)), Math.max(0, 8 - actual.length));
+  const choices = shuffle([...actual, ...distractors]);
+
+  // which emojis already placed
+  const alreadyPlaced = Object.values(wwState);
+
+  choices.forEach(emoji => {
+    const btn = document.createElement('div');
+    btn.className = 'popup-emoji-btn';
+    btn.textContent = emoji;
+    // grey out if this emoji is already placed somewhere (same count as appearances)
+    const timesNeeded = actual.filter(e => e === emoji).length;
+    const timesPlaced = alreadyPlaced.filter(e => e === emoji).length;
+    if (timesPlaced >= timesNeeded && timesNeeded > 0) {
+      btn.classList.add('already-used');
+    }
+    btn.addEventListener('click', () => selectEmojiForCell(emoji));
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('emoji-popup-overlay').classList.remove('hidden');
+}
+
+function selectEmojiForCell(emoji) {
+  if (pendingCellIdx === null) return;
+  const targetIdx = pendingCellIdx;
+  closeEmojiPopup();
+
+  wwState[targetIdx] = emoji;
+  const cell = document.getElementById('game-grid').querySelector(`.grid-cell[data-idx="${targetIdx}"]`);
+  if (cell) {
+    cell.textContent = emoji;
+    cell.classList.remove('awaiting');
+    cell.classList.add('placed');
+    // small X to remove
+    const x = document.createElement('span');
+    x.className = 'cell-clear';
+    x.textContent = '✕';
+    x.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      delete wwState[targetIdx];
+      cell.textContent = '';
+      cell.classList.remove('placed');
+    });
+    cell.appendChild(x);
+  }
+
+  const placedCount = Object.keys(wwState).length;
+  setStatus(`${placedCount} / ${gameState.count} ábra elhelyezve – nyomj Ellenőrzésre!`);
+}
+
+function closeEmojiPopup(e) {
+  if (e && e.target !== document.getElementById('emoji-popup-overlay')) return;
+  document.getElementById('emoji-popup-overlay').classList.add('hidden');
+  // remove awaiting highlight
+  if (pendingCellIdx !== null) {
+    const cell = document.getElementById('game-grid').querySelector(`.grid-cell[data-idx="${pendingCellIdx}"]`);
+    if (cell) cell.classList.remove('awaiting');
+    pendingCellIdx = null;
+  }
+}
+
+function clearWhatWhere() {
+  wwState = {};
+  pendingCellIdx = null;
+  document.getElementById('game-grid').querySelectorAll('.grid-cell').forEach(c => {
+    c.textContent = '';
+    c.classList.remove('placed', 'awaiting', 'correct', 'wrong');
+  });
+  document.getElementById('grid-result').classList.remove('show');
+  setStatus('Kattints egy cellára, és válaszd ki, mi volt ott!');
+}
+
+function checkWhatWhereAnswer() {
+  if (gameState.phase !== 'guessing') return;
+  gameState.phase = 'done';
+
+  document.getElementById('grid-check-btn').classList.add('hidden');
+  document.getElementById('grid-clear-btn').classList.add('hidden');
+
+  let correct = 0;
+  const grid = document.getElementById('game-grid');
+
+  grid.querySelectorAll('.grid-cell').forEach(c => {
+    c.removeEventListener('click', onWhatWhereCellClick);
+    c.classList.remove('awaiting', 'placed');
+    // remove X buttons
+    const x = c.querySelector('.cell-clear');
+    if (x) x.remove();
+
+    const idx = parseInt(c.dataset.idx);
+    const correctPosIdx = gameState.positions.indexOf(idx);
+    const correctEmoji = correctPosIdx !== -1 ? gameState.emojis[correctPosIdx] : null;
+    const userEmoji = wwState[idx] !== undefined ? wwState[idx] : null;
+
+    if (correctEmoji !== null) {
+      // This cell should have an emoji
+      if (userEmoji === correctEmoji) {
+        c.textContent = userEmoji;
+        c.classList.add('correct');
+        correct++;
+        const r = c.getBoundingClientRect();
+        spawnStars(r.left + r.width/2, r.top + r.height/2, 3);
+      } else if (userEmoji !== null) {
+        // Wrong emoji placed here
+        c.textContent = userEmoji;
+        c.classList.add('wrong');
+      } else {
+        // Nothing placed, reveal correct
+        c.textContent = correctEmoji;
+        c.classList.add('show-emoji');
+      }
+    } else {
+      // Cell should be empty
+      if (userEmoji !== null) {
+        // User placed something here incorrectly
+        c.textContent = userEmoji;
+        c.classList.add('wrong');
+      }
+    }
+  });
+
+  showGridResult(correct, gameState.count);
+}
+
+function showGridResult(correct, total) {
+  let icon, text, sub;
+  if (correct === total) {
+    icon = '🎉'; text = 'Szuper! Mindent megtaláltál!'; sub = `${correct}/${total} – Fantasztikus!`;
+  } else if (correct >= Math.ceil(total/2)) {
+    icon = '👍'; text = 'Jól ment! Folytasd!'; sub = `${correct}/${total} helyes.`;
+  } else {
+    icon = '🙈'; text = 'Próbáld újra!'; sub = `${correct}/${total} – Majd sikerül!`;
+  }
+  setStatus(icon + ' ' + text);
+  document.getElementById('grid-result-text').textContent = icon + ' ' + text;
+  document.getElementById('grid-result-sub').textContent = sub;
+  document.getElementById('grid-result').classList.add('show');
+}
+
+// ===================== ROW GAME =====================
+function startRowGame() {
+  const showCount = parseInt(document.getElementById('row-show-count').value);
+  const extraCount = parseInt(document.getElementById('row-extra-count').value);
+  const showTime = parseInt(document.getElementById('row-show-time').value);
+
+  const sequence = pick(EMOJIS, showCount);
+  const extras = pick(EMOJIS.filter(e => !sequence.includes(e)), extraCount);
+  const paletteItems = shuffle([...sequence, ...extras]);
+
+  rowState = { sequence, paletteItems, bottomRow: Array(showCount).fill(null), phase: 'showing' };
+  selectedPaletteEmoji = null;
+  selectedPaletteEl = null;
+
+  buildTopRow(sequence, false);
+  buildBottomRow(showCount);
+  buildPalette(paletteItems, true);
+
+  document.getElementById('check-btn').classList.add('hidden');
+  document.getElementById('clear-btn').classList.add('hidden');
+  document.getElementById('row-result').classList.remove('show');
+  setStatus('Jegyezd meg a sort!');
+
+  setTimeout(() => {
+    buildTopRow(sequence, true);
+    rowState.phase = 'guessing';
+    document.querySelectorAll('.palette-item').forEach(p => p.style.opacity = '1');
+    document.getElementById('check-btn').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.remove('hidden');
+    setStatus('Rakd ki a sort emlékezetből!');
+  }, showTime * 1000);
+}
+
+function buildTopRow(sequence, hide) {
+  const row = document.getElementById('top-row');
+  row.innerHTML = '';
+  sequence.forEach(emoji => {
+    const cell = document.createElement('div');
+    cell.className = 'row-cell top-cell' + (hide ? ' hidden-emoji' : '');
+    if (!hide) cell.textContent = emoji;
+    row.appendChild(cell);
+  });
+}
+
+function buildBottomRow(count) {
+  const row = document.getElementById('bottom-row');
+  row.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'row-cell drop-target';
+    cell.dataset.idx = i;
+    cell.addEventListener('click', () => onBottomCellClick(i));
+    row.appendChild(cell);
+  }
+}
+
+function buildPalette(items, dimmed) {
+  const pal = document.getElementById('emoji-palette');
+  pal.innerHTML = '';
+  items.forEach((emoji, i) => {
+    const item = document.createElement('div');
+    item.className = 'palette-item';
+    item.textContent = emoji;
+    item.dataset.emoji = emoji;
+    item.dataset.pidx = i;
+    if (dimmed) item.style.opacity = '0.3';
+    item.addEventListener('click', () => onPaletteClick(emoji, i));
+    pal.appendChild(item);
+  });
+}
+
+function onPaletteClick(emoji, pidx) {
+  if (rowState.phase !== 'guessing') return;
+  const item = document.querySelector(`.palette-item[data-pidx="${pidx}"]`);
+  if (item.classList.contains('used')) return;
+  if (selectedPaletteEl) selectedPaletteEl.classList.remove('selected-palette');
+  if (selectedPaletteEl === item) { selectedPaletteEmoji = null; selectedPaletteEl = null; return; }
+  selectedPaletteEmoji = emoji;
+  selectedPaletteEl = item;
+  item.classList.add('selected-palette');
+}
+
+function onBottomCellClick(idx) {
+  if (rowState.phase !== 'guessing') return;
+  if (rowState.bottomRow[idx] !== null) {
+    const oldEmoji = rowState.bottomRow[idx];
+    rowState.bottomRow[idx] = null;
+    let done = false;
+    document.querySelectorAll('.palette-item').forEach(p => {
+      if (!done && p.dataset.emoji === oldEmoji && p.classList.contains('used')) {
+        p.classList.remove('used'); done = true;
+      }
+    });
+    refreshBottomRow();
+    return;
+  }
+  if (!selectedPaletteEmoji) { setStatus('Először válassz egy ábrát lentről!'); return; }
+  rowState.bottomRow[idx] = selectedPaletteEmoji;
+  if (selectedPaletteEl) {
+    selectedPaletteEl.classList.add('used');
+    selectedPaletteEl.classList.remove('selected-palette');
+    selectedPaletteEl = null; selectedPaletteEmoji = null;
+  }
+  refreshBottomRow();
+}
+
+function refreshBottomRow() {
+  document.getElementById('bottom-row').querySelectorAll('.row-cell').forEach((cell, i) => {
+    cell.className = 'row-cell drop-target';
+    if (rowState.bottomRow[i]) { cell.textContent = rowState.bottomRow[i]; cell.classList.add('filled'); }
+    else cell.textContent = '';
+  });
+}
+
+function clearBottomRow() {
+  rowState.bottomRow = Array(rowState.sequence.length).fill(null);
+  refreshBottomRow();
+  document.querySelectorAll('.palette-item').forEach(p => { p.classList.remove('used', 'selected-palette'); p.style.opacity = '1'; });
+  selectedPaletteEmoji = null; selectedPaletteEl = null;
+  document.getElementById('row-result').classList.remove('show');
+  setStatus('Rakd ki a sort emlékezetből!');
+}
+
+function checkRowAnswer() {
+  if (rowState.phase !== 'guessing') return;
+  buildTopRow(rowState.sequence, false);
+  let correct = 0;
+  document.getElementById('bottom-row').querySelectorAll('.row-cell').forEach((cell, i) => {
+    if (rowState.bottomRow[i] === null) { cell.classList.add('empty-slot'); }
+    else if (rowState.bottomRow[i] === rowState.sequence[i]) {
+      cell.classList.add('correct'); cell.textContent = rowState.bottomRow[i]; correct++;
+      const r = cell.getBoundingClientRect(); spawnStars(r.left + r.width/2, r.top, 2);
+    } else { cell.classList.add('wrong'); cell.textContent = rowState.bottomRow[i]; }
+  });
+
+  const total = rowState.sequence.length;
+  let icon, text, sub;
+  if (correct === total) {
+    icon = '🎉'; text = 'Tökéletes! Mindent eltaláltál!'; sub = `${correct}/${total} – Bravo!`;
+    spawnStars(window.innerWidth/2, window.innerHeight/2, 12);
+  } else if (correct >= Math.ceil(total * 0.6)) {
+    icon = '👍'; text = 'Nagyon jó! Majdnem!'; sub = `${correct}/${total} – Szép munka!`;
+  } else {
+    icon = '🙈'; text = 'Próbáld újra!'; sub = `${correct}/${total} – Majd megy!`;
+  }
+  setStatus(icon + ' ' + text);
+  document.getElementById('row-result-text').textContent = icon + ' ' + text;
+  document.getElementById('row-result-sub').textContent = sub;
+  document.getElementById('row-result').classList.add('show');
+  rowState.phase = 'done';
+  document.getElementById('check-btn').classList.add('hidden');
+  document.getElementById('clear-btn').classList.add('hidden');
+}
+
+// INIT
+updateGridSettings();
+buildTopRow([], false);
+buildBottomRow(3);
+buildPalette([], false);
+</script>
+</body>
+</html>

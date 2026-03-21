@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Útvonal másolás</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F4FF;
+    --white: #ffffff;
+    --purple: #6C63FF;
+    --purple-dark: #4B44CC;
+    --red: #FF6B6B;
+    --green: #43D98A;
+    --yellow: #FFD166;
+    --cell: #DDE3FF;
+    --cell-border: #B8C1FF;
+    --text: #22223b;
+    --muted: #8888aa;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 12px 48px;
+    gap: 14px;
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    color: var(--purple);
+    text-align: center;
+  }
+
+  /* Settings toggle */
+  .settings-toggle {
+    background: var(--white);
+    border: 2.5px solid var(--cell-border);
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: var(--purple);
+    cursor: pointer;
+  }
+  .settings-toggle:hover { background: var(--cell); }
+
+  /* Settings panel */
+  .settings-panel {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 18px 22px;
+    box-shadow: 0 4px 18px rgba(108,99,255,0.10);
+    width: min(460px, 100%);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-panel.open { display: flex; }
+
+  .settings-title {
+    font-weight: 900;
+    font-size: 1rem;
+    color: var(--purple);
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .setting-label {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text);
+    flex: 1;
+  }
+  .setting-label small {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .setting-value {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: var(--purple);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 7px;
+    border-radius: 8px;
+    background: var(--cell);
+    outline: none;
+    cursor: pointer;
+    width: 120px;
+    flex-shrink: 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--purple);
+    cursor: pointer;
+  }
+
+  .apply-btn {
+    background: var(--purple);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 9px 22px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.92rem;
+    cursor: pointer;
+    align-self: flex-end;
+    box-shadow: 0 4px 0 var(--purple-dark);
+    transition: transform 0.1s;
+  }
+  .apply-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--purple-dark); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border-radius: 50px;
+    padding: 7px 20px;
+    box-shadow: 0 2px 10px rgba(108,99,255,0.10);
+    font-weight: 900;
+    font-size: 0.88rem;
+  }
+
+  .level-badge {
+    background: var(--purple);
+    color: white;
+    border-radius: 50px;
+    padding: 3px 12px;
+    font-size: 0.88rem;
+    font-weight: 900;
+  }
+
+  /* Phase text */
+  .phase {
+    font-size: clamp(0.95rem, 3vw, 1.2rem);
+    font-weight: 900;
+    color: var(--purple);
+    text-align: center;
+    min-height: 1.5rem;
+  }
+
+  /* Grids */
+  .grids {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  @media (min-width: 680px) {
+    .grids { flex-direction: row; justify-content: center; align-items: flex-start; }
+  }
+
+  .grid-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .grid-label {
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .grid {
+    display: grid;
+    gap: 4px;
+    background: var(--white);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 3px 14px rgba(108,99,255,0.10);
+    border: 2.5px solid var(--cell-border);
+  }
+
+  .cell {
+    background: var(--cell);
+    border-radius: 7px;
+    border: 2px solid var(--cell-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.12s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .cell:hover { transform: scale(1.08); }
+  .cell:active { transform: scale(0.92); }
+
+  .cell::after {
+    content: '';
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
+    transform: scale(0.3);
+  }
+
+  .cell.show-path { background: var(--purple); border-color: var(--purple-dark); }
+  .cell.show-path::after { opacity: 1; transform: scale(1); }
+
+  .cell.user-path { background: var(--red); border-color: #c94b4b; }
+  .cell.user-path::after { opacity: 1; transform: scale(1); }
+
+  .cell.correct { background: var(--green); border-color: #28a864; animation: pop 0.3s cubic-bezier(0.34,1.6,0.64,1); }
+  .cell.correct::after { opacity: 1; transform: scale(1); }
+
+  .cell.wrong { background: var(--red); border-color: #c0392b; animation: shake 0.4s ease; }
+
+  .cell.start-marker { border-color: #059669 !important; border-width: 3px !important; }
+  .cell.end-marker   { border-color: var(--yellow) !important; border-width: 3px !important; }
+
+  @keyframes pop {
+    0%   { transform: scale(0.8); }
+    60%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-5px); }
+    75%      { transform: translateX(5px); }
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.98rem;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+
+  .btn-primary { background: var(--purple); color: white; }
+  .btn-primary:hover { background: var(--purple-dark); }
+  .btn-secondary { background: var(--red); color: white; }
+  .btn-check { background: var(--green); color: white; box-shadow: 0 4px 0 #28a864; }
+
+  /* Result */
+  .result {
+    font-weight: 900;
+    font-size: clamp(0.95rem, 3.5vw, 1.3rem);
+    text-align: center;
+    min-height: 1.6rem;
+  }
+  .result.success { color: #059669; }
+  .result.fail    { color: var(--red); }
+
+  .stars { font-size: 1.5rem; letter-spacing: 4px; min-height: 1.8rem; text-align: center; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<h1>🗺️ Útvonal másolás</h1>
+
+<button class="settings-toggle" id="settingsToggle">⚙️ Beállítások</button>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-title">Játék beállítások</div>
+
+  <div class="setting-row">
+    <div class="setting-label">Rács mérete<small>3×3 – 8×8</small></div>
+    <input type="range" id="sizeSlider" min="3" max="8" value="4">
+    <span class="setting-value" id="sizeVal">4×4</span>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Útvonal hossza<small>lépések száma</small></div>
+    <input type="range" id="stepsSlider" min="2" max="20" value="5">
+    <span class="setting-value" id="stepsVal">5</span>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Bemutatás sebessége<small>lassú – gyors</small></div>
+    <input type="range" id="speedSlider" min="1" max="5" value="3">
+    <span class="setting-value" id="speedVal">közepes</span>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label">Automatikus szintlépés<small>ennyi helyes válasz után</small></div>
+    <input type="range" id="autoSlider" min="0" max="5" value="2">
+    <span class="setting-value" id="autoVal">2</span>
+  </div>
+
+  <button class="apply-btn" id="applyBtn">Alkalmaz</button>
+</div>
+
+<div class="status-bar">
+  <span class="level-badge" id="levelBadge">1. kör</span>
+  <span>⭐ <span id="scoreVal">0</span> pont</span>
+  <span>✅ <span id="correctVal">0</span> helyes</span>
+</div>
+
+<div class="phase" id="phaseText">Nyomd meg a gombot a kezdéshez!</div>
+
+<div class="grids">
+  <div class="grid-wrap">
+    <div class="grid-label">📺 Minta</div>
+    <div class="grid" id="showGrid"></div>
+  </div>
+  <div class="grid-wrap">
+    <div class="grid-label">✏️ A te rajzod</div>
+    <div class="grid" id="userGrid"></div>
+  </div>
+</div>
+
+<div class="result" id="result"></div>
+<div class="stars" id="stars"></div>
+
+<div class="btn-row">
+  <button class="btn btn-secondary" id="clearBtn" style="display:none">🗑️ Törlés</button>
+  <button class="btn btn-check" id="checkBtn" style="display:none">✅ Ellenőrzés</button>
+  <button class="btn btn-primary" id="mainBtn">▶ Kezdés</button>
+</div>
+
+<script>
+  const SPEED_LABELS = ['nagyon lassú','lassú','közepes','gyors','nagyon gyors'];
+  const SPEED_MS     = [900, 650, 420, 260, 130];
+
+  let cfg = { size: 4, steps: 5, speedIdx: 2, autoLevel: 2 };
+  let score = 0, roundCount = 0, correctCount = 0, consecutiveCorrect = 0;
+  let currentPath = [], userPath = [];
+  let phase = 'idle';
+
+  // Slider displays
+  const sizeSlider  = document.getElementById('sizeSlider');
+  const stepsSlider = document.getElementById('stepsSlider');
+  const speedSlider = document.getElementById('speedSlider');
+  const autoSlider  = document.getElementById('autoSlider');
+
+  function updateDisplays() {
+    const s = parseInt(sizeSlider.value);
+    document.getElementById('sizeVal').textContent  = `${s}×${s}`;
+    document.getElementById('stepsVal').textContent = stepsSlider.value;
+    document.getElementById('speedVal').textContent = SPEED_LABELS[parseInt(speedSlider.value)-1];
+    const av = parseInt(autoSlider.value);
+    document.getElementById('autoVal').textContent  = av === 0 ? 'ki' : String(av);
+  }
+
+  sizeSlider.addEventListener('input', () => {
+    const maxSteps = Math.min(20, parseInt(sizeSlider.value) ** 2 - 1);
+    stepsSlider.max = maxSteps;
+    if (parseInt(stepsSlider.value) > maxSteps) stepsSlider.value = maxSteps;
+    updateDisplays();
+  });
+  stepsSlider.addEventListener('input', updateDisplays);
+  speedSlider.addEventListener('input', updateDisplays);
+  autoSlider.addEventListener('input', updateDisplays);
+  updateDisplays();
+
+  document.getElementById('settingsToggle').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.toggle('open');
+  });
+
+  document.getElementById('applyBtn').addEventListener('click', () => {
+    cfg.size      = parseInt(sizeSlider.value);
+    cfg.steps     = parseInt(stepsSlider.value);
+    cfg.speedIdx  = parseInt(speedSlider.value) - 1;
+    cfg.autoLevel = parseInt(autoSlider.value);
+    document.getElementById('settingsPanel').classList.remove('open');
+    resetGame();
+  });
+
+  // DOM
+  const showGrid     = document.getElementById('showGrid');
+  const userGrid     = document.getElementById('userGrid');
+  const phaseText    = document.getElementById('phaseText');
+  const resultEl     = document.getElementById('result');
+  const starsEl      = document.getElementById('stars');
+  const mainBtn      = document.getElementById('mainBtn');
+  const clearBtn     = document.getElementById('clearBtn');
+  const levelBadge   = document.getElementById('levelBadge');
+  const scoreValEl   = document.getElementById('scoreVal');
+  const checkBtn     = document.getElementById('checkBtn');
+  const correctValEl = document.getElementById('correctVal');
+  let isRetry = false;
+
+  function buildGrids() {
+    const size = cfg.size;
+    const maxW = Math.min(window.innerWidth / 2 - 32, 300);
+    const cellPx = Math.max(28, Math.floor((maxW - 24) / size) - 4);
+
+    [showGrid, userGrid].forEach((g, gi) => {
+      g.style.gridTemplateColumns = `repeat(${size}, ${cellPx}px)`;
+      g.innerHTML = '';
+      for (let i = 0; i < size * size; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.style.width = cell.style.height = cellPx + 'px';
+        if (gi === 1) cell.addEventListener('click', () => onUserCellClick(i));
+        g.appendChild(cell);
+      }
+    });
+  }
+
+  function generatePath(size, steps) {
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    let path = [], visited = new Set();
+    let r = Math.floor(Math.random() * size);
+    let c = Math.floor(Math.random() * size);
+    path.push(r * size + c);
+    visited.add(r * size + c);
+    for (let i = 1; i < steps; i++) {
+      const sh = dirs.slice().sort(() => Math.random() - 0.5);
+      let moved = false;
+      for (const [dr, dc] of sh) {
+        const nr = r+dr, nc = c+dc, ni = nr*size+nc;
+        if (nr>=0&&nr<size&&nc>=0&&nc<size&&!visited.has(ni)) {
+          r=nr; c=nc; path.push(ni); visited.add(ni); moved=true; break;
+        }
+      }
+      if (!moved) break;
+    }
+    return path;
+  }
+
+  function showPath(path, callback) {
+    const cells = showGrid.querySelectorAll('.cell');
+    cells.forEach(c => c.className = 'cell');
+    const delay = SPEED_MS[cfg.speedIdx];
+    let i = 0;
+    function step() {
+      if (i < path.length) {
+        cells[path[i]].classList.add('show-path');
+        if (i === 0) cells[path[i]].classList.add('start-marker');
+        i++;
+        setTimeout(step, delay);
+      } else {
+        setTimeout(() => {
+          cells.forEach(c => c.className = 'cell');
+          path.forEach((idx, j) => {
+            cells[idx].classList.add('show-path');
+            if (j === 0) cells[idx].classList.add('start-marker');
+            if (j === path.length-1) cells[idx].classList.add('end-marker');
+          });
+          setTimeout(callback, 700);
+        }, delay);
+      }
+    }
+    step();
+  }
+
+  function onUserCellClick(idx) {
+    if (phase !== 'drawing') return;
+    const cells = userGrid.querySelectorAll('.cell');
+    if (userPath.length > 0 && userPath[userPath.length-1] === idx) {
+      cells[idx].classList.remove('user-path','start-marker','end-marker');
+      userPath.pop(); return;
+    }
+    if (userPath.includes(idx)) return;
+    if (userPath.length > 0) {
+      const last = userPath[userPath.length-1];
+      const lr = Math.floor(last/cfg.size), lc = last%cfg.size;
+      const nr = Math.floor(idx/cfg.size),  nc = idx%cfg.size;
+      if (Math.abs(lr-nr)+Math.abs(lc-nc) !== 1) return;
+    }
+    userPath.push(idx);
+    cells[idx].classList.add('user-path');
+    if (userPath.length === 1) cells[idx].classList.add('start-marker');
+  }
+
+  function checkAnswer() {
+    phase = 'result';
+    clearBtn.style.display = 'none';
+    checkBtn.style.display = 'none';
+    const cells = userGrid.querySelectorAll('.cell');
+    const correct = userPath.every((idx, i) => idx === currentPath[i]);
+
+    if (correct) {
+      consecutiveCorrect++;
+      correctCount++;
+      correctValEl.textContent = correctCount;
+      score += 10 + cfg.size * 2 + cfg.steps;
+      scoreValEl.textContent = score;
+      userPath.forEach(idx => { cells[idx].classList.remove('user-path'); cells[idx].classList.add('correct'); });
+      resultEl.textContent = '🎉 Helyes! Szuper!';
+      resultEl.className = 'result success';
+      starsEl.textContent = consecutiveCorrect >= 3 ? '⭐⭐⭐' : consecutiveCorrect >= 2 ? '⭐⭐' : '⭐';
+
+      if (cfg.autoLevel > 0 && consecutiveCorrect >= cfg.autoLevel && cfg.size < 8) {
+        consecutiveCorrect = 0;
+        cfg.size++;
+        sizeSlider.value = cfg.size;
+        const maxSteps = Math.min(20, cfg.size * cfg.size - 1);
+        cfg.steps = Math.min(cfg.steps + 1, maxSteps);
+        stepsSlider.max = maxSteps;
+        stepsSlider.value = cfg.steps;
+        updateDisplays();
+        mainBtn.textContent = '🚀 Következő szint!';
+      } else {
+        mainBtn.textContent = '▶ Újabb útvonal';
+      }
+    } else {
+      consecutiveCorrect = 0;
+      isRetry = true;
+      userPath.forEach(idx => { cells[idx].classList.remove('user-path','start-marker','end-marker'); cells[idx].classList.add('wrong'); });
+      resultEl.textContent = '😅 Nem egészen… Próbáld újra!';
+      resultEl.className = 'result fail';
+      starsEl.textContent = '';
+      mainBtn.textContent = '🔄 Újra';
+    }
+    mainBtn.style.display = 'inline-block';
+  }
+
+  function clearUser() {
+    userPath = [];
+    userGrid.querySelectorAll('.cell').forEach(c => c.className = 'cell');
+  }
+
+  function newRound() {
+    const retrying = isRetry;
+    isRetry = false;
+    if (!retrying) roundCount++;
+    levelBadge.textContent = `${roundCount}. kör`;
+    resultEl.textContent = ''; resultEl.className = 'result';
+    starsEl.textContent = '';
+    userPath = []; phase = 'showing';
+    mainBtn.style.display = 'none';
+    clearBtn.style.display = 'none';
+    checkBtn.style.display = 'none';
+    buildGrids();
+    if (!retrying) currentPath = generatePath(cfg.size, cfg.steps);
+    phaseText.textContent = '👀 Figyeld az útvonalat!';
+    showPath(currentPath, () => {
+      phase = 'drawing';
+      phaseText.textContent = '✏️ Most te rajzold meg!';
+      clearBtn.style.display = 'inline-block';
+      checkBtn.style.display = 'inline-block';
+      userGrid.querySelectorAll('.cell')[currentPath[0]].classList.add('start-marker');
+    });
+  }
+
+  function resetGame() {
+    score = 0; roundCount = 0; correctCount = 0; consecutiveCorrect = 0; isRetry = false;
+    scoreValEl.textContent = '0'; correctValEl.textContent = '0';
+    levelBadge.textContent = '1. kör';
+    resultEl.textContent = ''; starsEl.textContent = '';
+    phase = 'idle';
+    mainBtn.textContent = '▶ Kezdés';
+    mainBtn.style.display = 'inline-block';
+    clearBtn.style.display = 'none';
+    phaseText.textContent = 'Nyomd meg a gombot a kezdéshez!';
+    buildGrids();
+  }
+
+  mainBtn.addEventListener('click', () => { if (phase === 'idle' || phase === 'result') newRound(); });
+  clearBtn.addEventListener('click', () => { if (phase === 'drawing') clearUser(); });
+  checkBtn.addEventListener('click', () => { if (phase === 'drawing' && userPath.length > 0) checkAnswer(); });
+
+  buildGrids();
+</script>
+</body>
+</html>

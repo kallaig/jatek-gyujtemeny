@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Számolj Gyorsan!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fefce8;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 18px;
+    --accent: #ca8a04;
+    --accent-dark: #92400e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(250,204,21,0.15) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(249,115,22,0.10) 0%, transparent 40%);
+    overflow-x: hidden;
+  }
+
+  header { text-align: center; padding: 20px 16px 4px; }
+  .logo { font-size: clamp(22px,5vw,36px); font-weight: 900; color: var(--accent-dark); letter-spacing: -0.5px; }
+  .subtitle { font-size: 14px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+  /* SETTINGS */
+  .top-bar { max-width: 700px; margin: 10px auto 0; padding: 0 14px; display: flex; justify-content: flex-end; }
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 7px 16px;
+    border: 2px solid #fde68a; border-radius: 50px; cursor: pointer;
+    background: white; color: #64748b; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;
+  }
+  .settings-toggle-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+
+  .settings-panel {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    max-width: 700px; margin: 8px auto 0; overflow: hidden;
+    max-height: 0; transition: max-height 0.35s ease, padding 0.3s ease; padding: 0 22px;
+  }
+  .settings-panel.open { max-height: 340px; padding: 18px 22px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .setting-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 120px; }
+  .setting-group label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .setting-group select {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 11px; padding: 7px 11px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+  .setting-group select:focus { border-color: var(--accent); }
+
+  /* GAME */
+  .game-container { max-width: 700px; margin: 0 auto; padding: 12px 14px 50px; }
+
+  .status-bar { background: white; border-radius: var(--radius); padding: 12px 18px; margin-bottom: 12px; box-shadow: var(--shadow); text-align: center; }
+  .status-msg { font-size: 16px; font-weight: 800; color: #334155; }
+
+  /* SCORE ROW */
+  .score-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .score-badge {
+    font-size: 14px; font-weight: 900; padding: 5px 16px;
+    border-radius: 50px; background: white; box-shadow: var(--shadow);
+    border: 2px solid #fde68a; color: var(--accent-dark);
+  }
+  .score-badge.good { border-color: #86efac; color: #16a34a; }
+  .score-badge.bad  { border-color: #fca5a5; color: #dc2626; }
+
+  /* DISPLAY AREA */
+  .display-area {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px; margin-bottom: 12px;
+    min-height: 200px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+
+  /* TIMER BAR inside display */
+  .timer-track {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 5px;
+    background: #e2e8f0; border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .timer-fill {
+    height: 100%; background: linear-gradient(90deg,#facc15,#f97316);
+    border-radius: 0 0 var(--radius) var(--radius);
+    transition: width linear;
+  }
+
+  /* DOTS canvas */
+  canvas#dots-canvas { display: block; }
+
+  /* EMOJI GRID */
+  .emoji-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center;
+  }
+  .emoji-item { font-size: 36px; line-height: 1; user-select: none; }
+
+  /* SVG shapes grid */
+  .shapes-grid {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center;
+  }
+  .shapes-grid svg.shape { display: block; }
+
+  /* MASK overlay (shown after time up) */
+  .mask-overlay {
+    position: absolute; inset: 0;
+    background: white; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  /* ANSWER BUTTONS */
+  .answer-section {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .answer-label {
+    font-size: 12px; font-weight: 800; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: center; margin-bottom: 12px;
+  }
+  .answer-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .answer-btn {
+    font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900;
+    padding: 14px 4px;
+    border: 3px solid #e2e8f0; border-radius: 14px;
+    background: #f8fafc; color: #334155;
+    cursor: pointer; transition: all 0.15s;
+    user-select: none;
+  }
+  .answer-btn:hover { background: #fef9c3; border-color: #facc15; transform: scale(1.06); }
+  .answer-btn.selected { background: #fef9c3; border-color: #ca8a04; transform: scale(1.05); }
+  .answer-btn.correct  { background: #dcfce7 !important; border-color: #22c55e !important; animation: pop 0.3s ease; }
+  .answer-btn.wrong    { background: #fee2e2 !important; border-color: #ef4444 !important; animation: shake 0.4s ease; }
+  .answer-btn.reveal   { background: #dcfce7 !important; border-color: #22c55e !important; opacity: 0.7; }
+  .answer-btn:disabled { cursor: default; }
+
+  /* RESULT */
+  .result-banner { background: white; border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); margin-bottom: 12px; display: none; }
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+  .result-text { font-size: 22px; font-weight: 900; color: #334155; margin-bottom: 4px; }
+  .result-sub  { font-size: 14px; font-weight: 600; color: #64748b; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+    padding: 12px 26px; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.14); }
+  .btn:active { transform: translateY(0); }
+  .btn-start  { background: linear-gradient(135deg, #facc15, #f97316); color: white; }
+  .btn-next   { background: linear-gradient(135deg, #facc15, #ca8a04); color: white; }
+  .btn-new    { background: linear-gradient(135deg, #64748b, #475569); color: white; }
+
+  /* ANIMATIONS */
+  @keyframes pop   { 0%{transform:scale(1)} 40%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  .star { position:fixed; pointer-events:none; font-size:22px; animation:floatStar 1.4s ease-out forwards; z-index:200; }
+  @keyframes floatStar { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.5)} }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <div class="logo">⚡ Számolj Gyorsan!</div>
+  <div class="subtitle">Mennyi van belőle?</div>
+</header>
+
+<div class="top-bar">
+  <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+</div>
+
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Típus</label>
+      <select id="item-type">
+        <option value="dots" selected>Pontok</option>
+        <option value="emoji">Emoji</option>
+        <option value="shapes">Formák</option>
+        <option value="mixed">Vegyes</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Min. darab</label>
+      <select id="count-min">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Max. darab</label>
+      <select id="count-max">
+        <option value="5">5</option>
+        <option value="7">7</option>
+        <option value="9" selected>9</option>
+        <option value="12">12</option>
+        <option value="15">15</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Megjelenítési idő</label>
+      <select id="show-time">
+        <option value="500">0.5 mp</option>
+        <option value="1000">1 mp</option>
+        <option value="1500">1.5 mp</option>
+        <option value="2000" selected>2 mp</option>
+        <option value="3000">3 mp</option>
+        <option value="5000">5 mp</option>
+        <option value="10000">10 mp</option>
+        <option value="0">Korlátlan</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Körök száma</label>
+      <select id="round-count">
+        <option value="5">5</option>
+        <option value="8">8</option>
+        <option value="10" selected>10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Emoji kategória</label>
+      <select id="emoji-cat">
+        <option value="animals" selected>Állatok</option>
+        <option value="plants">Növények</option>
+        <option value="vehicles">Járművek</option>
+        <option value="mixed">Vegyes</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="game-container">
+
+  <div class="status-bar"><div class="status-msg" id="status-msg">Nyomj a Start gombra!</div></div>
+
+  <div class="score-row hidden" id="score-row">
+    <div class="score-badge" id="badge-round">1 / 10</div>
+    <div class="score-badge good" id="badge-correct">✓ 0</div>
+    <div class="score-badge bad"  id="badge-wrong">✗ 0</div>
+  </div>
+
+  <!-- DISPLAY AREA -->
+  <div class="display-area hidden" id="display-area" style="position:relative;min-height:240px;padding:0;">
+    <canvas id="main-canvas" style="display:block;"></canvas>
+    <div class="timer-track hidden" id="timer-track" style="position:absolute;bottom:0;left:0;right:0;">
+      <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+    </div>
+  </div>
+
+  <!-- ANSWER BUTTONS -->
+  <div class="answer-section hidden" id="answer-section">
+    <div class="answer-label">Hány darabot láttál?</div>
+    <div class="answer-grid" id="answer-grid"></div>
+  </div>
+
+  <div class="result-banner" id="result-banner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub" id="result-sub"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-start" id="start-btn" onclick="startGame()">🚀 Start</button>
+    <button class="btn btn-new hidden" id="new-btn" onclick="startGame()">🔄 Új játék</button>
+    <button class="btn btn-next hidden" id="next-btn" onclick="nextRound()">Következő ▶</button>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──
+const EMOJI_POOLS = {
+  animals:  ['🐶','🐱','🐰','🦊','🐻','🐼','🐯','🐮','🐷','🐸','🐵','🦁','🐧','🦉','🐺'],
+  plants:   ['🌵','🍄','🌴','🌻','🍁','🍀','🌾','🎋','🌲','🪨'],
+  vehicles: ['🚂','✈️','🚀','🚁','⛵','🚒','🚑','🛸','🚜','🏍'],
+};
+const COLORS = [{id:'red',hex:'#ef4444'},{id:'yellow',hex:'#facc15'},{id:'green',hex:'#22c55e'},{id:'blue',hex:'#3b82f6'}];
+const SHAPES_LIST = ['circle','square','triangle'];
+
+// ── STATE ──
+let GS = {};
+let settingsOpen = false;
+let timerAF = null;
+
+// ── UTILS ──
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
+function setStatus(m){document.getElementById('status-msg').textContent=m;}
+function spawnStars(x,y,n){['⭐','🌟','✨','💫'].slice(0,n).forEach((s,i)=>{const e=document.createElement('div');e.className='star';e.textContent=s;e.style.left=(x+(Math.random()-.5)*80)+'px';e.style.top=(y+(Math.random()-.5)*40)+'px';e.style.animationDelay=(i*.1)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),1800);});}
+
+function toggleSettings(){settingsOpen=!settingsOpen;document.getElementById('settings-panel').classList.toggle('open',settingsOpen);}
+
+// ── SVG ──
+function makeShapeSVG(colorId,shape,size){
+  const hex=COLORS.find(c=>c.id===colorId)?.hex||'#888';
+  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 48 48');svg.classList.add('shape');
+  svg.style.width=size+'px';svg.style.height=size+'px';
+  let el;
+  if(shape==='circle'){el=document.createElementNS(ns,'circle');el.setAttribute('cx','24');el.setAttribute('cy','24');el.setAttribute('r','20');}
+  else if(shape==='square'){el=document.createElementNS(ns,'rect');el.setAttribute('x','4');el.setAttribute('y','4');el.setAttribute('width','40');el.setAttribute('height','40');el.setAttribute('rx','4');}
+  else{el=document.createElementNS(ns,'polygon');el.setAttribute('points','24,4 44,44 4,44');}
+  el.setAttribute('fill',hex);el.setAttribute('stroke','rgba(0,0,0,0.10)');el.setAttribute('stroke-width','1.5');
+  svg.appendChild(el);return svg;
+}
+
+// ── START GAME ──
+function startGame(){
+  const itemType  = document.getElementById('item-type').value;
+  const countMin  = parseInt(document.getElementById('count-min').value);
+  const countMax  = parseInt(document.getElementById('count-max').value);
+  const showTime  = parseInt(document.getElementById('show-time').value);
+  const roundCount= parseInt(document.getElementById('round-count').value);
+  const emojiCat  = document.getElementById('emoji-cat').value;
+
+  GS = {
+    itemType, countMin, countMax: Math.max(countMin+1,countMax),
+    showTime, roundCount, emojiCat,
+    currentRound: 0, correct: 0, wrong: 0,
+    phase: 'idle', correctCount: 0,
+  };
+
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('start-btn').classList.add('hidden');
+  document.getElementById('new-btn').classList.remove('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('score-row').classList.remove('hidden');
+  document.getElementById('display-area').classList.remove('hidden');
+  document.getElementById('answer-section').classList.remove('hidden');
+
+  buildAnswerGrid(GS.countMin, GS.countMax);
+  nextRound();
+}
+
+// ── ANSWER GRID ──
+function buildAnswerGrid(min, max){
+  const grid = document.getElementById('answer-grid');
+  grid.innerHTML = '';
+  // Fixed layout: row1 = 1-5, row2 = 6-10, row3 = 0 (centered)
+  // Always show full 0-10 grid for consistency
+  const hi = Math.max(max, 10);
+
+  // Row 1: 1–5
+  grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+  for(let n=1; n<=5; n++){
+    grid.appendChild(makeAnswerBtn(n));
+  }
+  // Row 2: 6–10
+  for(let n=6; n<=10; n++){
+    grid.appendChild(makeAnswerBtn(n));
+  }
+  // Row 3: 0 centered — use 5-col grid, put 0 in col 3 (middle)
+  // Add 2 spacers, then 0, then 2 spacers
+  for(let i=0; i<2; i++){
+    const sp = document.createElement('div');
+    grid.appendChild(sp);
+  }
+  grid.appendChild(makeAnswerBtn(0));
+  for(let i=0; i<2; i++){
+    const sp = document.createElement('div');
+    grid.appendChild(sp);
+  }
+}
+
+function makeAnswerBtn(n){
+  const btn = document.createElement('button');
+  btn.className = 'answer-btn';
+  btn.textContent = n;
+  btn.dataset.val = n;
+  btn.addEventListener('click', ()=>onAnswer(n, btn));
+  return btn;
+}
+
+// ── NEXT ROUND ──
+function nextRound(){
+  if(timerAF) clearTimeout(timerAF);
+  GS.currentRound++;
+  GS.phase = 'showing';
+
+  // Pick type for this round
+  let type = GS.itemType;
+  if(type==='mixed'){
+    type = rand(['dots','emoji','shapes']);
+  }
+  GS.roundType = type;
+
+  // Pick count
+  GS.correctCount = randInt(GS.countMin, GS.countMax);
+
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('next-btn').classList.add('hidden');
+
+  // Reset answer buttons
+  document.querySelectorAll('.answer-btn').forEach(b=>{
+    b.classList.remove('selected','correct','wrong','reveal');
+    b.disabled = false;
+  });
+
+  updateBadges();
+  showItems(type, GS.correctCount);
+}
+
+// ── SHOW ITEMS ──
+function showItems(type, count){
+  const area = document.getElementById('display-area');
+
+  // Reset canvas and remove mask
+  const canvas = document.getElementById('main-canvas');
+  canvas.style.display = 'block';
+  area.querySelectorAll('.mask-overlay').forEach(m=>m.remove());
+
+  // Timer bar
+  const track = document.getElementById('timer-track');
+  const fill  = document.getElementById('timer-fill');
+  if(GS.showTime > 0){
+    track.classList.remove('hidden');
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    // Force reflow then animate
+    fill.offsetWidth;
+    fill.style.transition = `width ${GS.showTime}ms linear`;
+    fill.style.width = '0%';
+  } else {
+    track.classList.add('hidden');
+  }
+
+  drawItems(type, count);
+
+  setStatus('Figyelj! Mennyi van belőle?');
+
+  if(GS.showTime > 0){
+    timerAF = setTimeout(()=>maskItems(), GS.showTime);
+  }
+
+  GS.phase = 'showing';
+}
+
+function maskItems(){
+  const area = document.getElementById('display-area');
+  document.getElementById('main-canvas').style.display='none';
+  // Show mask
+  area.querySelectorAll('.mask-overlay').forEach(m=>m.remove());
+  const mask = document.createElement('div');
+  mask.className = 'mask-overlay';
+  mask.textContent = '🙂';
+  area.appendChild(mask);
+  GS.phase = 'answering';
+  setStatus('Hány darabot láttál?');
+}
+
+// ── UNIFIED DRAW ──
+function drawItems(type, count){
+  const area   = document.getElementById('display-area');
+  const canvas = document.getElementById('main-canvas');
+  const W = area.offsetWidth  || 400;
+  const H = Math.max(240, Math.min(W * 0.7, 340));
+  canvas.width  = W;
+  canvas.height = H;
+  canvas.style.width  = W+'px';
+  canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  if(count === 0) return; // nothing to draw
+
+  // Size range: vary each item randomly between small and large
+  const minSz = count > 9 ? 18 : count > 5 ? 24 : 32;
+  const maxSz = count > 9 ? 34 : count > 5 ? 48 : 64;
+
+  // Place items without overlap using rejection sampling
+  const placements = []; // {x, y, sz}
+  const TRIES = 3000;
+  let attempts = 0;
+  while(placements.length < count && attempts < TRIES){
+    attempts++;
+    const sz  = randInt(minSz, maxSz);
+    const half = sz / 2 + 4;
+    const x   = randInt(half, W - half);
+    const y   = randInt(half, H - half - 6); // leave room for timer bar
+    const ok  = placements.every(p => Math.hypot(p.x-x, p.y-y) > (p.sz/2 + sz/2 + 6));
+    if(ok) placements.push({x, y, sz});
+  }
+
+  if(type === 'dots'){
+    const dotColors = ['#6366f1','#ec4899','#f97316','#22c55e','#3b82f6','#a855f7','#14b8a6','#eab308','#ef4444','#06b6d4','#84cc16','#f43f5e'];
+    placements.forEach((p,i)=>{
+      const r = p.sz / 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+      ctx.fillStyle = dotColors[i % dotColors.length];
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+  } else if(type === 'emoji'){
+    let pool;
+    const cat = GS.emojiCat;
+    if(cat==='mixed') pool = [...EMOJI_POOLS.animals,...EMOJI_POOLS.plants,...EMOJI_POOLS.vehicles];
+    else pool = EMOJI_POOLS[cat];
+    const emoji = rand(pool);
+
+    placements.forEach(p=>{
+      ctx.font = `${Math.round(p.sz * 0.9)}px serif`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, p.x, p.y);
+    });
+
+  } else { // shapes — each gets its own random color+shape
+    placements.forEach(p=>{
+      const color = rand(COLORS).hex;
+      const shape = rand(SHAPES_LIST);
+      const s = p.sz;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle   = color;
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth   = 1.5;
+      if(shape === 'circle'){
+        ctx.beginPath();
+        ctx.arc(0, 0, s/2, 0, Math.PI*2);
+        ctx.fill(); ctx.stroke();
+      } else if(shape === 'square'){
+        const h = s/2;
+        const rr = s * 0.1;
+        ctx.beginPath();
+        ctx.roundRect(-h, -h, s, s, rr);
+        ctx.fill(); ctx.stroke();
+      } else { // triangle
+        const h = s/2;
+        ctx.beginPath();
+        ctx.moveTo(0, -h);
+        ctx.lineTo(h, h);
+        ctx.lineTo(-h, h);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+}
+
+// ── ANSWER ──
+function onAnswer(val, btn){
+  if(GS.phase !== 'showing' && GS.phase !== 'answering') return;
+  if(timerAF) clearTimeout(timerAF);
+  GS.phase = 'feedback';
+
+  // Mask if not already
+  const area = document.getElementById('display-area');
+  if(!area.querySelector('.mask-overlay')) maskItems();
+
+  // Disable all buttons
+  document.querySelectorAll('.answer-btn').forEach(b=>b.disabled=true);
+
+  const correct = GS.correctCount;
+  const isCorrect = val === correct;
+
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+  // Update mask emoji
+  const maskEl = area.querySelector('.mask-overlay');
+  if(maskEl) maskEl.textContent = isCorrect ? '😊' : '🧐';
+
+  if(!isCorrect){
+    // Reveal correct
+    document.querySelectorAll('.answer-btn').forEach(b=>{
+      if(parseInt(b.dataset.val)===correct) b.classList.add('reveal');
+    });
+  } else {
+    // Stars
+    const r = btn.getBoundingClientRect();
+    spawnStars(r.left+r.width/2, r.top, 4);
+  }
+
+  if(isCorrect) GS.correct++;
+  else GS.wrong++;
+  updateBadges();
+
+  const statusMsg = isCorrect
+    ? `✅ Helyes! ${correct} darab volt.`
+    : `❌ Nem! ${correct} darab volt, te ${val}-t mondtál.`;
+  setStatus(statusMsg);
+
+  // Show result inline
+  showRoundResult(isCorrect, correct, val);
+
+  // Show next button
+  setTimeout(()=>{
+    if(GS.currentRound >= GS.roundCount){
+      setTimeout(()=>showFinalResult(), 400);
+    } else {
+      document.getElementById('next-btn').classList.remove('hidden');
+    }
+  }, 500);
+}
+
+function showRoundResult(ok, correct, given){
+  document.getElementById('result-text').textContent = ok ? `✅ Helyes! ${correct} darab` : `❌ ${given} helyett ${correct} volt`;
+  document.getElementById('result-sub').textContent  = `${GS.correct} helyes / ${GS.currentRound} kör`;
+  const b = document.getElementById('result-banner');
+  b.style.display='block'; b.classList.add('show');
+}
+
+function showFinalResult(){
+  GS.phase = 'done';
+  const total = GS.roundCount;
+  const c = GS.correct;
+  const pct = Math.round(c/total*100);
+
+  let icon,text,sub;
+  if(c===total){icon='🏆';text='Tökéletes!';sub=`${c}/${total} helyes – Bravo!`;}
+  else if(pct>=70){icon='🎉';text='Nagyon jó!';sub=`${c}/${total} helyes (${pct}%)`;}
+  else if(pct>=50){icon='👍';text='Jól ment!';sub=`${c}/${total} helyes (${pct}%)`;}
+  else{icon='🙈';text='Gyakorolj tovább!';sub=`${c}/${total} helyes (${pct}%)`;}
+
+  setStatus(icon+' '+text);
+  document.getElementById('result-text').textContent=icon+' '+text;
+  document.getElementById('result-sub').textContent=sub;
+  const b=document.getElementById('result-banner');b.style.display='block';b.classList.add('show');
+
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('start-btn').textContent='🔄 Új játék';
+  document.getElementById('start-btn').classList.remove('hidden');
+  document.getElementById('new-btn').classList.add('hidden');
+  document.getElementById('score-row').classList.add('hidden');
+}
+
+function updateBadges(){
+  document.getElementById('badge-round').textContent   = `${GS.currentRound} / ${GS.roundCount}`;
+  document.getElementById('badge-correct').textContent = `✓ ${GS.correct}`;
+  document.getElementById('badge-wrong').textContent   = `✗ ${GS.wrong}`;
+}
+</script>
+</body>
+</html>

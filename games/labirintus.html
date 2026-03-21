@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labirintus</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F7FF;
+    --white: #ffffff;
+    --blue: #3B82F6;
+    --blue-dark: #1D4ED8;
+    --green: #22C55E;
+    --green-dark: #15803D;
+    --red: #EF4444;
+    --yellow: #FCD34D;
+    --wall: #334155;
+    --path: #E2EEFF;
+    --visited: #BFDBFE;
+    --player: #3B82F6;
+    --goal: #22C55E;
+    --text: #1E3A5F;
+    --muted: #6B8DB5;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px 40px;
+    gap: 12px;
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    color: var(--blue-dark);
+    text-align: center;
+  }
+
+  /* Settings */
+  .settings-toggle {
+    background: var(--white);
+    border: 2.5px solid #BFDBFE;
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: var(--blue-dark);
+    cursor: pointer;
+  }
+  .settings-toggle:hover { background: var(--path); }
+
+  .settings-panel {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 18px 22px;
+    box-shadow: 0 4px 18px rgba(59,130,246,0.10);
+    width: min(440px, 100%);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-panel.open { display: flex; }
+  .settings-title { font-weight: 900; font-size: 1rem; color: var(--blue-dark); }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .setting-label { font-weight: 700; font-size: 0.88rem; color: var(--text); flex: 1; }
+  .setting-label small { display: block; font-size: 0.72rem; color: var(--muted); }
+  .setting-value { font-weight: 900; font-size: 0.95rem; color: var(--blue-dark); min-width: 40px; text-align: right; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 7px; border-radius: 8px;
+    background: var(--path); outline: none;
+    cursor: pointer; width: 120px; flex-shrink: 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--blue); cursor: pointer;
+  }
+
+  .toggle-group {
+    display: flex;
+    border-radius: 50px;
+    border: 2px solid #BFDBFE;
+    overflow: hidden;
+  }
+  .toggle-group button {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900; font-size: 0.78rem;
+    border: none; padding: 6px 12px;
+    cursor: pointer; background: var(--white); color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .toggle-group button.active { background: var(--blue); color: white; }
+
+  .apply-btn {
+    background: var(--blue); color: white; border: none;
+    border-radius: 50px; padding: 9px 22px;
+    font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.92rem;
+    cursor: pointer; align-self: flex-end;
+    box-shadow: 0 4px 0 var(--blue-dark);
+    transition: transform 0.1s;
+  }
+  .apply-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--blue-dark); }
+
+  /* Status */
+  .status-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--white); border-radius: 50px;
+    padding: 7px 20px;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.10);
+    font-weight: 900; font-size: 0.88rem;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .badge {
+    border-radius: 50px; padding: 3px 12px;
+    font-size: 0.85rem; font-weight: 900;
+    color: white; background: var(--blue);
+  }
+
+  .phase {
+    font-size: clamp(0.95rem, 3vw, 1.15rem);
+    font-weight: 900; color: var(--blue-dark);
+    text-align: center; min-height: 1.5rem;
+  }
+
+  /* Maze canvas */
+  .maze-wrap {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.13);
+    border: 3px solid #BFDBFE;
+  }
+
+  canvas { display: block; border-radius: 8px; }
+
+  /* Arrow controls */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(3, 56px);
+    gap: 6px;
+  }
+
+  .arrow-btn {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    border: none;
+    background: var(--blue);
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 0 var(--blue-dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .arrow-btn:active, .arrow-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--blue-dark);
+  }
+  .arrow-btn.empty { background: transparent; box-shadow: none; cursor: default; pointer-events: none; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 0.98rem;
+    border: none; border-radius: 50px; padding: 10px 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-danger { background: var(--red); color: white; }
+
+  .result {
+    font-weight: 900; font-size: clamp(0.95rem, 3.5vw, 1.3rem);
+    text-align: center; min-height: 1.6rem;
+  }
+  .result.success { color: var(--green-dark); }
+  .result.fail    { color: var(--red); }
+  .stars { font-size: 1.5rem; letter-spacing: 4px; min-height: 1.8rem; text-align: center; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot {
+    width: 14px; height: 14px; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<h1>🌀 Labirintus</h1>
+
+<button class="settings-toggle" id="settingsToggle">⚙️ Beállítások</button>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-title">Játék beállítások</div>
+
+  <div class="setting-row">
+    <div class="setting-label">Nehézség</div>
+    <div class="toggle-group" id="diffGroup">
+      <button data-val="easy"      class="active">Könnyű</button>
+      <button data-val="medium">Közepes</button>
+      <button data-val="hard">Nehéz</button>
+      <button data-val="extrahard">Extra</button>
+    </div>
+  </div>
+
+  <button class="apply-btn" id="applyBtn">Alkalmaz</button>
+</div>
+
+<div class="status-bar">
+  <span class="badge" id="roundBadge">1. pálya</span>
+  <span>👣 <span id="stepsVal">0</span> lépés</span>
+  <span>⭐ <span id="scoreVal">0</span> pont</span>
+</div>
+
+<div class="phase" id="phaseText">Nyomd meg a gombot a kezdéshez!</div>
+
+<div class="maze-wrap" id="mazeWrap" style="display:none">
+  <canvas id="mazeCanvas"></canvas>
+</div>
+
+<div class="legend" id="legend" style="display:none">
+  <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div>Te</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22C55E"></div>Cél</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#334155"></div>Fal</div>
+</div>
+
+<div class="controls" id="controls" style="display:none">
+  <div class="arrow-btn empty"></div>
+  <button class="arrow-btn" id="btnUp"    data-dir="up">▲</button>
+  <div class="arrow-btn empty"></div>
+  <button class="arrow-btn" id="btnLeft"  data-dir="left">◀</button>
+  <div class="arrow-btn empty"></div>
+  <button class="arrow-btn" id="btnRight" data-dir="right">▶</button>
+  <div class="arrow-btn empty"></div>
+  <button class="arrow-btn" id="btnDown"  data-dir="down">▼</button>
+  <div class="arrow-btn empty"></div>
+</div>
+
+<div class="result" id="result"></div>
+<div class="stars"  id="stars"></div>
+
+<div class="btn-row">
+  <button class="btn btn-danger"  id="restartBtn" style="display:none">🔄 Újrakezd</button>
+  <button class="btn btn-primary" id="mainBtn">▶ Kezdés</button>
+</div>
+
+<script>
+  // ── Config ────────────────────────────────────────────
+  const DIFF = {
+    easy:       { cols: 7,  rows: 7  },
+    medium:     { cols: 11, rows: 11 },
+    hard:       { cols: 15, rows: 15 },
+    extrahard:  { cols: 21, rows: 21 },
+  };
+
+  let cfg = { diff: 'easy' };
+  let maze = [], cols = 0, rows = 0;
+  let player = { x: 0, y: 0 };
+  let goal   = { x: 0, y: 0 };
+  let visited = [];
+  let steps = 0, score = 0, roundCount = 0;
+  let phase = 'idle';
+  let cellSize = 0;
+  let consecutiveWins = 0;
+
+  // ── Settings ──────────────────────────────────────────
+  document.querySelectorAll('.toggle-group').forEach(g => {
+    g.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        g.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  document.getElementById('settingsToggle').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.toggle('open');
+  });
+
+  document.getElementById('applyBtn').addEventListener('click', () => {
+    cfg.diff  = document.querySelector('#diffGroup .active').dataset.val;
+    document.getElementById('settingsPanel').classList.remove('open');
+    startGame();
+  });
+
+  // ── Maze generation (Recursive Backtracker) ───────────
+  function generateMaze(c, r) {
+    // grid: 0=path, 1=wall
+    // We work in "cell" space (odd indices), walls between cells
+    const grid = Array.from({ length: r }, () => Array(c).fill(1));
+    const dirs = [[0,-2],[0,2],[-2,0],[2,0]];
+
+    function carve(x, y) {
+      grid[y][x] = 0;
+      const shuffled = dirs.slice().sort(() => Math.random() - 0.5);
+      for (const [dx, dy] of shuffled) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < c && ny >= 0 && ny < r && grid[ny][nx] === 1) {
+          grid[y + dy/2][x + dx/2] = 0;
+          carve(nx, ny);
+        }
+      }
+    }
+
+    carve(1, 1);
+    return grid;
+  }
+
+  // ── Canvas drawing ────────────────────────────────────
+  const canvas = document.getElementById('mazeCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  function drawMaze() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const px = x * cellSize, py = y * cellSize;
+        if (maze[y][x] === 1) {
+          ctx.fillStyle = '#334155';
+        } else {
+          ctx.fillStyle = '#E2EEFF';
+        }
+        ctx.fillRect(px, py, cellSize, cellSize);
+      }
+    }
+
+    // Goal
+    const gx = goal.x * cellSize, gy = goal.y * cellSize;
+    ctx.fillStyle = '#22C55E';
+    const gPad = Math.max(2, cellSize * 0.15);
+    ctx.beginPath();
+    ctx.roundRect(gx + gPad, gy + gPad, cellSize - gPad*2, cellSize - gPad*2, 4);
+    ctx.fill();
+    // Star on goal
+    if (cellSize >= 18) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.floor(cellSize * 0.55)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', gx + cellSize/2, gy + cellSize/2);
+    }
+
+    // Player
+    const px = player.x * cellSize, py2 = player.y * cellSize;
+    const pad = Math.max(2, cellSize * 0.12);
+    ctx.fillStyle = '#3B82F6';
+    ctx.beginPath();
+    ctx.arc(px + cellSize/2, py2 + cellSize/2, cellSize/2 - pad, 0, Math.PI * 2);
+    ctx.fill();
+    // Face
+    if (cellSize >= 18) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${Math.floor(cellSize * 0.5)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('😊', px + cellSize/2, py2 + cellSize/2);
+    }
+  }
+
+  // ── Move player ───────────────────────────────────────
+  function move(dir) {
+    if (phase !== 'playing') return;
+    let nx = player.x, ny = player.y;
+    if (dir === 'up')    ny--;
+    if (dir === 'down')  ny++;
+    if (dir === 'left')  nx--;
+    if (dir === 'right') nx++;
+
+    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) return;
+    if (maze[ny][nx] === 1) return;
+
+    player.x = nx; player.y = ny;
+    visited[ny][nx] = true;
+    steps++;
+    document.getElementById('stepsVal').textContent = steps;
+    drawMaze();
+
+    if (player.x === goal.x && player.y === goal.y) {
+      onWin();
+    }
+  }
+
+  // ── Win ───────────────────────────────────────────────
+  function onWin() {
+    phase = 'done';
+    consecutiveWins++;
+    const bonus = Math.max(0, 200 - steps * 2);
+    const pts = 50 + bonus;
+    score += pts;
+    document.getElementById('scoreVal').textContent = score;
+    document.getElementById('result').textContent = `🎉 Kijutottál! +${pts} pont`;
+    document.getElementById('result').className = 'result success';
+    document.getElementById('stars').textContent =
+      consecutiveWins >= 3 ? '⭐⭐⭐' : consecutiveWins >= 2 ? '⭐⭐' : '⭐';
+    document.getElementById('controls').style.display = 'none';
+    document.getElementById('mainBtn').textContent = '▶ Következő pálya';
+    document.getElementById('mainBtn').style.display = 'inline-block';
+    document.getElementById('restartBtn').style.display = 'none';
+    document.getElementById('phaseText').textContent = '🏆 Gratulálok!';
+  }
+
+  // ── Start game ────────────────────────────────────────
+  function startGame() {
+    const d = DIFF[cfg.diff];
+    cols = d.cols; rows = d.rows;
+
+    // Cell size based on screen
+    const maxPx = Math.min(window.innerWidth - 48, window.innerHeight * 0.45, 420);
+    cellSize = Math.floor(maxPx / Math.max(cols, rows));
+    cellSize = Math.max(cellSize, 16);
+
+    canvas.width  = cols * cellSize;
+    canvas.height = rows * cellSize;
+
+    maze = generateMaze(cols, rows);
+    visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+
+    player = { x: 1, y: 1 };
+    goal   = { x: cols - 2, y: rows - 2 };
+    visited[1][1] = true;
+    steps = 0;
+
+    roundCount++;
+    document.getElementById('roundBadge').textContent = `${roundCount}. pálya`;
+    document.getElementById('stepsVal').textContent = '0';
+    document.getElementById('result').textContent = '';
+    document.getElementById('result').className = 'result';
+    document.getElementById('stars').textContent = '';
+    document.getElementById('phaseText').textContent = '🗺️ Jusson ki a labirintusból!';
+
+    document.getElementById('mazeWrap').style.display = 'block';
+    document.getElementById('legend').style.display = 'flex';
+    document.getElementById('controls').style.display = 'grid';
+    document.getElementById('restartBtn').style.display = 'inline-block';
+    document.getElementById('mainBtn').style.display = 'none';
+
+    phase = 'playing';
+    drawMaze();
+  }
+
+  // ── Controls ──────────────────────────────────────────
+  document.querySelectorAll('.arrow-btn[data-dir]').forEach(btn => {
+    btn.addEventListener('click', () => move(btn.dataset.dir));
+    btn.addEventListener('pointerdown', () => btn.classList.add('pressed'));
+    btn.addEventListener('pointerup',   () => btn.classList.remove('pressed'));
+  });
+
+  // Keyboard
+  const heldKeys = new Set();
+  document.addEventListener('keydown', e => {
+    if (heldKeys.has(e.code)) return;
+    heldKeys.add(e.code);
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+                  KeyW:'up', KeyS:'down', KeyA:'left', KeyD:'right' };
+    if (map[e.code]) { e.preventDefault(); move(map[e.code]); }
+  });
+  document.addEventListener('keyup', e => heldKeys.delete(e.code));
+
+  // Main button
+  document.getElementById('mainBtn').addEventListener('click', () => {
+    if (phase === 'idle' || phase === 'done') startGame();
+  });
+
+  // Restart
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    consecutiveWins = 0;
+    startGame();
+  });
+</script>
+</body>
+</html>

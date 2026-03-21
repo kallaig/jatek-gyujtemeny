@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Útvonal Memória</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8faff;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 18px;
+    --accent: #6366f1;
+    --accent-dark: #4f46e5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(99,102,241,0.09) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(168,85,247,0.07) 0%, transparent 40%);
+    overflow-x: hidden;
+  }
+
+  header { text-align: center; padding: 20px 16px 4px; }
+  .logo { font-size: clamp(22px,5vw,36px); font-weight: 900; color: var(--accent-dark); letter-spacing: -0.5px; }
+  .subtitle { font-size: 14px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+  /* SETTINGS */
+  .top-bar { max-width: 700px; margin: 10px auto 0; padding: 0 14px; display: flex; justify-content: flex-end; }
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 7px 16px;
+    border: 2px solid #c7d2fe; border-radius: 50px; cursor: pointer;
+    background: white; color: #64748b; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;
+  }
+  .settings-toggle-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+
+  .settings-panel {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    max-width: 700px; margin: 8px auto 0; overflow: hidden;
+    max-height: 0; transition: max-height 0.35s ease, padding 0.3s ease; padding: 0 22px;
+  }
+  .settings-panel.open { max-height: 320px; padding: 18px 22px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .setting-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 120px; }
+  .setting-group label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .setting-group select {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 11px; padding: 7px 11px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+  .setting-group select:focus { border-color: var(--accent); }
+
+  /* GAME */
+  .game-container { max-width: 700px; margin: 0 auto; padding: 12px 14px 50px; }
+
+  .status-bar { background: white; border-radius: var(--radius); padding: 12px 18px; margin-bottom: 12px; box-shadow: var(--shadow); text-align: center; }
+  .status-msg { font-size: 16px; font-weight: 800; color: #334155; }
+
+  /* LEVEL + PROGRESS */
+  .info-row {
+    display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .info-badge {
+    font-size: 14px; font-weight: 900; padding: 5px 16px;
+    border-radius: 50px; background: white; box-shadow: var(--shadow);
+    border: 2px solid #c7d2fe; color: var(--accent-dark);
+  }
+  .info-badge.good  { border-color: #86efac; color: #16a34a; }
+  .info-badge.bad   { border-color: #fca5a5; color: #dc2626; }
+
+  /* SEQUENCE PREVIEW (for "all at once" mode) */
+  .seq-preview {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .seq-dot {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 2px solid #e2e8f0; background: #f1f5f9;
+    transition: all 0.2s;
+  }
+  .seq-dot.filled { background: var(--accent); border-color: var(--accent-dark); }
+  .seq-dot.correct { background: #22c55e; border-color: #16a34a; }
+  .seq-dot.wrong   { background: #ef4444; border-color: #dc2626; }
+
+  /* GRID */
+  .grid-wrap {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 16px; margin-bottom: 12px; display: flex; justify-content: center;
+  }
+
+  .corsi-grid {
+    display: grid;
+    gap: 8px;
+  }
+
+  .corsi-cell {
+    border-radius: 14px;
+    cursor: default;
+    transition: all 0.15s;
+    position: relative;
+    border: 3px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* idle */
+  .corsi-cell.idle {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+
+  /* lit up during demo */
+  .corsi-cell.lit {
+    border-color: white;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.5), 0 6px 20px rgba(0,0,0,0.15);
+    transform: scale(1.08);
+  }
+
+  /* all-at-once: path shown */
+  .corsi-cell.path-shown {
+    opacity: 1;
+    border-color: rgba(255,255,255,0.6);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  /* step number overlay during animation */
+  .corsi-cell .step-num {
+    position: absolute;
+    font-size: 20px; font-weight: 900;
+    color: rgba(255,255,255,0.95);
+    pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+
+  /* clickable during recall */
+  .corsi-cell.clickable {
+    cursor: pointer;
+  }
+  .corsi-cell.clickable:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(99,102,241,0.25);
+    border-color: rgba(255,255,255,0.8);
+  }
+
+  /* user clicked */
+  .corsi-cell.clicked {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.7), 0 6px 20px rgba(0,0,0,0.15);
+  }
+
+  /* feedback */
+  .corsi-cell.correct-flash {
+    animation: correctFlash 0.5s ease;
+  }
+  .corsi-cell.wrong-flash {
+    animation: wrongFlash 0.5s ease;
+  }
+
+  /* step counter badge on cell */
+  .corsi-cell .cell-badge {
+    position: absolute; top: 4px; right: 5px;
+    font-size: 11px; font-weight: 900;
+    color: rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.2);
+    border-radius: 99px; padding: 0 5px;
+    line-height: 18px;
+  }
+
+  /* RESULT */
+  .result-banner { background: white; border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); margin-bottom: 12px; display: none; }
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+  .result-text { font-size: 22px; font-weight: 900; color: #334155; margin-bottom: 4px; }
+  .result-sub  { font-size: 14px; font-weight: 600; color: #64748b; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+    padding: 12px 26px; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.14); }
+  .btn:active { transform: translateY(0); }
+  .btn-start  { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+  .btn-next   { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
+  .btn-replay { background: linear-gradient(135deg, #f97316, #facc15); color: white; }
+  .btn-new    { background: linear-gradient(135deg, #64748b, #475569); color: white; }
+
+  /* ANIMATIONS */
+  @keyframes correctFlash { 0%{transform:scale(1)} 30%{transform:scale(1.18)} 100%{transform:scale(1)} }
+  @keyframes wrongFlash   { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} }
+  @keyframes slideDown    { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes popIn        { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  .star { position:fixed; pointer-events:none; font-size:22px; animation:floatStar 1.4s ease-out forwards; z-index:200; }
+  @keyframes floatStar { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.5)} }
+
+  /* uniform cell mode: white cells, yellow flash */
+  .corsi-cell.uniform-idle {
+    background: white !important;
+    border: 3px solid #94a3b8 !important;
+  }
+  .corsi-cell.uniform-lit {
+    background: #fde047 !important;
+    border: 3px solid #ca8a04 !important;
+    box-shadow: 0 0 0 3px rgba(250,204,21,0.5), 0 6px 20px rgba(0,0,0,0.12);
+    transform: scale(1.08);
+  }
+  .corsi-cell.uniform-lit .step-num {
+    color: #713f12 !important;
+    text-shadow: none !important;
+  }
+  /* grid background for uniform mode */
+  .grid-wrap.uniform-bg {
+    background: #d1fae5 !important;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <div class="logo">🗺️ Útvonal Memória</div>
+  <div class="subtitle">Jegyezd meg az útvonalat, majd ismételd meg!</div>
+</header>
+
+<div class="top-bar">
+  <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+</div>
+
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Rács mérete</label>
+      <select id="grid-size">
+        <option value="3">3 × 3</option>
+        <option value="4" selected>4 × 4</option>
+        <option value="5">5 × 5</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Kezdő lépésszám</label>
+      <select id="start-len">
+        <option value="2">2 lépés</option>
+        <option value="3" selected>3 lépés</option>
+        <option value="4">4 lépés</option>
+        <option value="5">5 lépés</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Megjelenítés</label>
+      <select id="display-mode">
+        <option value="sequential" selected>Egymás után (animálva)</option>
+        <option value="allatonce">Egyszerre, majd eltűnik</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Animáció sebessége</label>
+      <select id="anim-speed">
+        <option value="1000">Lassú (1 mp)</option>
+        <option value="700" selected>Közepes (0.7 mp)</option>
+        <option value="450">Gyors (0.45 mp)</option>
+        <option value="280">Nagyon gyors</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Nehezítés</label>
+      <select id="difficulty">
+        <option value="fixed">Fix lépésszám</option>
+        <option value="grow" selected>Növekvő (+1 siker után)</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Életek</label>
+      <select id="lives">
+        <option value="1">1 élet</option>
+        <option value="3" selected>3 élet</option>
+        <option value="5">5 élet</option>
+        <option value="0">Végtelen</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Cella stílus</label>
+      <select id="cell-mode">
+        <option value="colored" selected>Színes cellák</option>
+        <option value="uniform">Egyforma (fehér)</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Visszajelzés</label>
+      <select id="feedback-mode">
+        <option value="instant" selected>Azonnal (hibánál megáll)</option>
+        <option value="end">Végigvezeti, végén mutatja</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="game-container">
+
+  <div class="status-bar">
+    <div class="status-msg" id="status-msg">Nyomj a Start gombra!</div>
+  </div>
+
+  <div class="info-row hidden" id="info-row">
+    <div class="info-badge" id="badge-level">Szint: 3</div>
+    <div class="info-badge" id="badge-score">✓ 0</div>
+    <div class="info-badge bad" id="badge-lives">❤️ 3</div>
+  </div>
+
+  <!-- sequence progress dots -->
+  <div class="seq-preview hidden" id="seq-preview"></div>
+
+  <div class="grid-wrap hidden" id="grid-wrap">
+    <div class="corsi-grid" id="corsi-grid"></div>
+  </div>
+
+  <div class="result-banner" id="result-banner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub"  id="result-sub"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-start"  id="start-btn"  onclick="startGame()">🚀 Start</button>
+    <button class="btn btn-new hidden" id="new-btn" onclick="startGame()">🔄 Új játék</button>
+    <button class="btn btn-replay hidden" id="replay-btn" onclick="replayDemo()">🔁 Újra mutatja</button>
+    <button class="btn btn-next   hidden" id="next-btn"   onclick="nextRound()">Következő ▶</button>
+  </div>
+
+</div>
+
+<script>
+// ── CELL COLORS ──
+// Each cell gets a distinct pastel-ish color for visual identity
+const CELL_COLORS = [
+  '#6366f1','#ec4899','#f97316','#22c55e','#3b82f6',
+  '#a855f7','#14b8a6','#eab308','#ef4444','#06b6d4',
+  '#84cc16','#f43f5e','#8b5cf6','#10b981','#f59e0b',
+  '#0ea5e9','#d946ef','#64748b','#fb923c','#4ade80',
+  '#818cf8','#e879f9','#34d399','#fbbf24','#60a5fa',
+];
+
+// ── STATE ──
+let GS = {};
+let settingsOpen = false;
+let demoTimeout = null;
+
+// ── UTILS ──
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
+function setStatus(m){document.getElementById('status-msg').textContent=m;}
+function spawnStars(x,y,n){['⭐','🌟','✨','💫'].slice(0,n).forEach((s,i)=>{const e=document.createElement('div');e.className='star';e.textContent=s;e.style.left=(x+(Math.random()-.5)*80)+'px';e.style.top=(y+(Math.random()-.5)*40)+'px';e.style.animationDelay=(i*.1)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),1800);});}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function toggleSettings(){settingsOpen=!settingsOpen;document.getElementById('settings-panel').classList.toggle('open',settingsOpen);}
+
+// ── BUILD GRID ──
+function buildGrid(gridSize, cellMode){
+  const grid = document.getElementById('corsi-grid');
+  const maxW = Math.min(500, window.innerWidth - 60);
+  const cellSize = Math.floor((maxW - (gridSize-1)*8) / gridSize);
+  const safe = Math.max(50, Math.min(cellSize, 110));
+
+  grid.style.gridTemplateColumns = `repeat(${gridSize}, ${safe}px)`;
+  grid.innerHTML = '';
+
+  const colorPool = cellMode==='uniform'
+    ? Array(gridSize*gridSize).fill('#ffffff')
+    : shuffle([...CELL_COLORS]).slice(0, gridSize*gridSize);
+
+  for(let i=0; i<gridSize*gridSize; i++){
+    const cell = document.createElement('div');
+    const idleClass = cellMode==='uniform' ? 'corsi-cell uniform-idle' : 'corsi-cell idle';
+    cell.className = idleClass;
+    cell.style.width = safe+'px';
+    cell.style.height = safe+'px';
+    cell.style.backgroundColor = colorPool[i];
+    cell.dataset.idx = i;
+    cell.dataset.color = colorPool[i];
+    grid.appendChild(cell);
+  }
+}
+
+function getCell(idx){
+  return document.querySelector(`.corsi-cell[data-idx="${idx}"]`);
+}
+
+// ── GENERATE ROUTE ──
+function generateRoute(gridSize, len){
+  const total = gridSize * gridSize;
+  const indices = shuffle([...Array(total).keys()]);
+  return indices.slice(0, len);
+}
+
+// ── START GAME ──
+function startGame(){
+  const gridSize   = parseInt(document.getElementById('grid-size').value);
+  const startLen   = parseInt(document.getElementById('start-len').value);
+  const dispMode   = document.getElementById('display-mode').value;
+  const animSpeed  = parseInt(document.getElementById('anim-speed').value);
+  const difficulty = document.getElementById('difficulty').value;
+  const livesMax   = parseInt(document.getElementById('lives').value);
+
+  GS = {
+    gridSize, dispMode, animSpeed, difficulty,
+    livesMax: livesMax===0 ? Infinity : livesMax,
+    lives: livesMax===0 ? Infinity : livesMax,
+    currentLen: startLen,
+    score: 0,
+    route: [],
+    userClicks: [],
+    phase: 'idle',
+    replayCount: 0,
+  };
+
+  const cellMode = document.getElementById('cell-mode').value;
+  GS.cellMode = cellMode;
+  GS.feedbackMode = document.getElementById('feedback-mode').value;
+
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('start-btn').classList.add('hidden');
+  document.getElementById('new-btn').classList.remove('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('replay-btn').classList.add('hidden');
+  document.getElementById('info-row').classList.remove('hidden');
+  document.getElementById('grid-wrap').classList.remove('hidden');
+
+  // Apply/remove uniform background
+  const gw = document.getElementById('grid-wrap');
+  if(cellMode === 'uniform') gw.classList.add('uniform-bg');
+  else gw.classList.remove('uniform-bg');
+
+  buildGrid(gridSize, cellMode);
+  updateBadges();
+  startRound();
+}
+
+// ── ROUND ──
+async function startRound(){
+  GS.route = generateRoute(GS.gridSize, GS.currentLen);
+  GS.userClicks = [];
+  GS.phase = 'demo';
+
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('replay-btn').classList.add('hidden');
+
+  // Reset all cells to idle
+  resetCells();
+  renderSeqDots(GS.currentLen, -1);
+  document.getElementById('seq-preview').classList.remove('hidden');
+
+  setStatus('Figyelj! Jegyezd meg az útvonalat!');
+  await delay(600);
+
+  if(GS.dispMode === 'sequential'){
+    await runSequentialDemo();
+  } else {
+    await runAllAtOnceDemo();
+  }
+
+  startRecall();
+}
+
+async function runSequentialDemo(){
+  const speed = GS.animSpeed;
+  const isUniform = GS.cellMode === 'uniform';
+  // Uniform: longer on-time (1.2×), color mode: normal
+  const onRatio  = isUniform ? 0.80 : 0.65;
+  const offRatio = isUniform ? 0.45 : 0.35;
+
+  for(let i=0; i<GS.route.length; i++){
+    const idx = GS.route[i];
+    const cell = getCell(idx);
+
+    // Light up
+    if(isUniform){
+      cell.classList.remove('uniform-idle');
+      cell.classList.add('uniform-lit');
+    } else {
+      cell.classList.remove('idle');
+      cell.classList.add('lit');
+    }
+    const num = document.createElement('span');
+    num.className = 'step-num';
+    num.textContent = i+1;
+    cell.appendChild(num);
+
+    await delay(speed * onRatio);
+
+    // Dim
+    if(isUniform){
+      cell.classList.remove('uniform-lit');
+      cell.classList.add('uniform-idle');
+    } else {
+      cell.classList.remove('lit');
+      cell.classList.add('idle');
+    }
+    num.remove();
+
+    await delay(speed * offRatio);
+  }
+}
+
+async function runAllAtOnceDemo(){
+  const speed = GS.animSpeed;
+  const showTime = speed * GS.currentLen * 0.8 + 400;
+
+  const isUniform = GS.cellMode === 'uniform';
+  // Show all path cells with step numbers
+  GS.route.forEach((idx, i) => {
+    const cell = getCell(idx);
+    if(isUniform){
+      cell.classList.remove('uniform-idle');
+      cell.classList.add('uniform-lit');
+    } else {
+      cell.classList.remove('idle');
+      cell.classList.add('path-shown');
+    }
+    const num = document.createElement('span');
+    num.className = 'step-num';
+    num.textContent = i+1;
+    cell.appendChild(num);
+  });
+
+  await delay(showTime);
+
+  // Hide
+  GS.route.forEach(idx => {
+    const cell = getCell(idx);
+    if(isUniform){
+      cell.classList.remove('uniform-lit');
+      cell.classList.add('uniform-idle');
+    } else {
+      cell.classList.remove('path-shown');
+      cell.classList.add('idle');
+    }
+    cell.querySelectorAll('.step-num').forEach(n=>n.remove());
+  });
+
+  await delay(300);
+}
+
+// ── RECALL ──
+function startRecall(){
+  GS.phase = 'recall';
+  GS.userClicks = [];
+  renderSeqDots(GS.currentLen, 0);
+
+  // Make cells clickable
+  document.querySelectorAll('.corsi-cell').forEach(c=>{
+    c.classList.add('clickable');
+    c.addEventListener('click', onCellClick);
+  });
+
+  // Show replay button
+  document.getElementById('replay-btn').classList.remove('hidden');
+
+  setStatus(`Kattints sorban a megjegyzett cellákra! (0 / ${GS.currentLen})`);
+}
+
+function onCellClick(e){
+  if(GS.phase !== 'recall') return;
+  const cell = e.currentTarget;
+  const idx = parseInt(cell.dataset.idx);
+
+  const step = GS.userClicks.length;
+  GS.userClicks.push(idx);
+
+  // Visual feedback: brief "clicked" highlight
+  cell.classList.add('clicked');
+  setTimeout(()=>cell.classList.remove('clicked'), 200);
+
+  if(GS.feedbackMode === 'end'){
+    // Just collect clicks, show neutral mark
+    renderSeqDots(GS.currentLen, step+1, null, null);
+    setStatus(`${step+1} / ${GS.currentLen} lépés`);
+    if(step+1 === GS.currentLen){
+      endRecallEnd();
+    }
+  } else {
+    // instant mode: evaluate immediately
+    const expected = GS.route[step];
+    if(idx === expected){
+      renderSeqDots(GS.currentLen, step+1, null, null);
+      setStatus(`Helyes! ${step+1} / ${GS.currentLen}`);
+      if(step+1 === GS.currentLen) endRecall(true);
+    } else {
+      endRecall(false, step);
+    }
+  }
+}
+
+// ── END-MODE RECALL ──
+function endRecallEnd(){
+  GS.phase = 'feedback';
+  document.getElementById('replay-btn').classList.add('hidden');
+  document.querySelectorAll('.corsi-cell').forEach(c=>{
+    c.classList.remove('clickable');
+    c.removeEventListener('click', onCellClick);
+  });
+
+  // Compare userClicks to route
+  const isUni = GS.cellMode === 'uniform';
+  let allCorrect = true;
+  GS.userClicks.forEach((idx, step) => {
+    const expected = GS.route[step];
+    const userCell = getCell(idx);
+    const corrCell = getCell(expected);
+    if(idx === expected){
+      // Correct: flash green
+      if(userCell){
+        userCell.classList.remove('uniform-idle','uniform-lit','idle');
+        userCell.style.backgroundColor = '#22c55e';
+        userCell.classList.add(isUni?'uniform-lit':'lit');
+        const num=document.createElement('span');num.className='step-num';num.textContent=step+1;userCell.appendChild(num);
+      }
+    } else {
+      allCorrect = false;
+      // Wrong cell: red outline + step number
+      if(userCell){
+        userCell.style.outline='4px solid #ef4444';
+        userCell.classList.add('wrong-flash');
+        const num=document.createElement('span');num.className='step-num';num.textContent=step+1;userCell.appendChild(num);
+      }
+      // Correct cell: show where it should have been
+      if(corrCell && corrCell !== userCell){
+        corrCell.classList.remove('uniform-idle','uniform-lit','idle');
+        corrCell.style.backgroundColor = '#86efac';
+        const num=document.createElement('span');num.className='step-num';
+        num.textContent=step+1;num.style.color='#14532d';corrCell.appendChild(num);
+      }
+    }
+  });
+
+  renderSeqDots(GS.currentLen, GS.currentLen, allCorrect?'correct':'wrong_end');
+
+  if(allCorrect){
+    GS.score++;
+    if(GS.difficulty==='grow') GS.currentLen++;
+    updateBadges();
+    setStatus('🎉 Tökéletes! Minden helyes!');
+    GS.route.forEach((idx)=>{const c=getCell(idx);if(c){const r=c.getBoundingClientRect();spawnStars(r.left+r.width/2,r.top,2);}});
+  } else {
+    GS.lives = Math.max(0, GS.lives-1);
+    updateBadges();
+    setStatus('Piros = rosszul kattintott, zöld = helyes hely');
+  }
+
+  showRoundResult(allCorrect);
+
+  setTimeout(()=>{
+    if(GS.lives<=0 && GS.livesMax!==Infinity){
+      setTimeout(()=>gameOver(),400);
+    } else {
+      document.getElementById('next-btn').classList.remove('hidden');
+      document.getElementById('next-btn').textContent = allCorrect?'Következő ▶':'Próbáld újra ▶';
+    }
+  }, 600);
+}
+
+function endRecall(success, wrongStep){
+  GS.phase = 'feedback';
+  document.getElementById('replay-btn').classList.add('hidden');
+
+  // Remove click listeners
+  document.querySelectorAll('.corsi-cell').forEach(c=>{
+    c.classList.remove('clickable');
+    c.removeEventListener('click', onCellClick);
+  });
+
+  if(success){
+    GS.score++;
+    updateBadges();
+
+    // Flash all route cells green
+    const isUni = GS.cellMode === 'uniform';
+    GS.route.forEach((idx,i) => {
+      const cell = getCell(idx);
+      setTimeout(()=>{
+        cell.classList.remove('uniform-idle','uniform-lit','idle');
+        cell.style.backgroundColor = '#22c55e';
+        cell.classList.add(isUni ? 'uniform-lit' : 'lit');
+        cell.classList.add('correct-flash');
+        const r = cell.getBoundingClientRect();
+        spawnStars(r.left+r.width/2, r.top+r.height/2, 2);
+      }, i*100);
+    });
+
+    renderSeqDots(GS.currentLen, GS.currentLen, 'correct');
+
+    if(GS.difficulty === 'grow') GS.currentLen++;
+    updateBadges();
+
+    setTimeout(()=>{
+      resetCells();
+      if(GS.lives <= 0 && GS.livesMax !== Infinity){
+        gameOver();
+      } else {
+        setStatus('Szuper! Kattints a Következőre!');
+        showRoundResult(true);
+        document.getElementById('next-btn').classList.remove('hidden');
+        document.getElementById('next-btn').textContent = 'Következő ▶';
+      }
+    }, 1200);
+
+  } else {
+    GS.lives = Math.max(0, GS.lives - 1);
+    updateBadges();
+
+    // Show correct vs wrong
+    GS.route.forEach((idx,i) => {
+      const cell = getCell(idx);
+      setTimeout(()=>{
+        cell.classList.add('lit');
+        const num = document.createElement('span');
+        num.className = 'step-num';
+        num.textContent = i+1;
+        cell.appendChild(num);
+      }, i*120);
+    });
+
+    // Flash wrong cell red
+    const wrongCell = getCell(GS.userClicks[wrongStep]);
+    if(wrongCell){
+      wrongCell.style.outline = '4px solid #ef4444';
+      wrongCell.classList.add('wrong-flash');
+    }
+
+    renderSeqDots(GS.currentLen, wrongStep, 'wrong');
+
+    setTimeout(()=>{
+      resetCells();
+      if(GS.lives <= 0 && GS.livesMax !== Infinity){
+        setTimeout(()=>gameOver(), 400);
+      } else {
+        // Offer replay or next
+        document.getElementById('next-btn').classList.remove('hidden');
+        document.getElementById('next-btn').textContent = 'Próbáld újra ▶';
+        setStatus(GS.livesMax===Infinity ? 'Nem sikerült – próbáld újra!' : `Nem sikerült! Maradt: ${GS.lives === Infinity ? '∞' : GS.lives} élet`);
+
+        // Show result briefly
+        showRoundResult(false);
+      }
+    }, 1800);
+  }
+}
+
+function nextRound(){
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  startRound();
+}
+
+async function replayDemo(){
+  if(GS.phase !== 'recall') return;
+  GS.phase = 'demo';
+  GS.replayCount++;
+
+  document.getElementById('replay-btn').classList.add('hidden');
+  document.querySelectorAll('.corsi-cell').forEach(c=>{
+    c.classList.remove('clickable');
+    c.removeEventListener('click', onCellClick);
+  });
+  GS.userClicks = [];
+  resetCells();
+
+  setStatus('Mutatom újra…');
+  await delay(400);
+
+  if(GS.dispMode === 'sequential'){
+    await runSequentialDemo();
+  } else {
+    await runAllAtOnceDemo();
+  }
+
+  startRecall();
+}
+
+// ── SEQ DOTS ──
+function renderSeqDots(total, filledCount, status){
+  const row = document.getElementById('seq-preview');
+  row.innerHTML = '';
+  for(let i=0; i<total; i++){
+    const dot = document.createElement('div');
+    dot.className = 'seq-dot';
+    if(status==='correct' && i<filledCount) dot.classList.add('correct');
+    else if(status==='wrong' && i<filledCount-1) dot.classList.add('correct');
+    else if(status==='wrong' && i===filledCount-1) dot.classList.add('wrong');
+    else if(status==='wrong_end') dot.classList.add('wrong'); // end-mode: all wrong-colored
+    else if(i<filledCount) dot.classList.add('filled');
+    row.appendChild(dot);
+  }
+}
+
+// ── RESET CELLS ──
+function resetCells(){
+  const isUniform = GS.cellMode === 'uniform';
+  document.querySelectorAll('.corsi-cell').forEach(c=>{
+    c.className = isUniform ? 'corsi-cell uniform-idle' : 'corsi-cell idle';
+    c.style.outline='';
+    c.style.backgroundColor=c.dataset.color;
+    c.querySelectorAll('.step-num,.cell-badge').forEach(n=>n.remove());
+    c.removeEventListener('click', onCellClick);
+  });
+}
+
+// ── BADGES ──
+function updateBadges(){
+  document.getElementById('badge-level').textContent = `${GS.currentLen} lépés`;
+  document.getElementById('badge-score').textContent = `✓ ${GS.score}`;
+  const livesText = GS.livesMax===Infinity ? '❤️ ∞' : `❤️ ${GS.lives}`;
+  document.getElementById('badge-lives').textContent = livesText;
+  document.getElementById('badge-lives').className = 'info-badge '+(GS.lives<=1&&GS.livesMax!==Infinity?'bad':'good');
+}
+
+// ── ROUND RESULT ──
+function showRoundResult(success){
+  // Small inline result
+  const text = success ? '🎉 Helyes!' : '❌ Nem sikerült';
+  document.getElementById('result-text').textContent = text;
+  document.getElementById('result-sub').textContent  = success
+    ? `Tovább: ${GS.currentLen} lépés`
+    : `A helyes útvonal felvillant. Próbáld újra!`;
+  const b = document.getElementById('result-banner');
+  b.style.display='block'; b.classList.add('show');
+}
+
+// ── GAME OVER ──
+function gameOver(){
+  GS.phase = 'gameover';
+  document.getElementById('seq-preview').classList.add('hidden');
+  resetCells();
+
+  const icon = GS.score >= 5 ? '🏆' : GS.score >= 2 ? '👍' : '🙈';
+  setStatus(icon+' Játék vége!');
+  document.getElementById('result-text').textContent = icon+' Játék vége!';
+  document.getElementById('result-sub').textContent  = `${GS.score} sikeres kör, legjobb: ${GS.currentLen-(GS.difficulty==='grow'?1:0)} lépés`;
+  const b = document.getElementById('result-banner');
+  b.style.display='block'; b.classList.add('show');
+
+  document.getElementById('start-btn').textContent='🔄 Új játék';
+  document.getElementById('start-btn').classList.remove('hidden');
+  document.getElementById('new-btn').classList.add('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('replay-btn').classList.add('hidden');
+}
+</script>
+</body>
+</html>

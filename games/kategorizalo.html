@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kategorizáló</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdf6ff;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 18px;
+    --accent: #a855f7;
+    --accent-dark: #7c3aed;
+    --cell: 80px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(168,85,247,0.10) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(236,72,153,0.08) 0%, transparent 40%),
+      radial-gradient(circle at 55% 45%, rgba(99,102,241,0.06) 0%, transparent 50%);
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  header { text-align: center; padding: 20px 16px 4px; }
+  .logo { font-size: clamp(22px,5vw,36px); font-weight: 900; color: var(--accent-dark); letter-spacing: -0.5px; }
+  .subtitle { font-size: 14px; color: #64748b; font-weight: 600; margin-top: 3px; }
+
+  /* SETTINGS */
+  .top-bar { max-width: 720px; margin: 10px auto 0; padding: 0 14px; display: flex; justify-content: flex-end; }
+  .settings-toggle-btn {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 7px 16px;
+    border: 2px solid #e9d5ff; border-radius: 50px; cursor: pointer;
+    background: white; color: #64748b; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;
+  }
+  .settings-toggle-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .settings-panel {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    max-width: 720px; margin: 8px auto 0; overflow: hidden;
+    max-height: 0; transition: max-height 0.35s ease, padding 0.3s ease; padding: 0 22px;
+  }
+  .settings-panel.open { max-height: 360px; padding: 18px 22px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .setting-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 120px; }
+  .setting-group label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .setting-group select {
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; color: #334155;
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 11px; padding: 7px 11px;
+    cursor: pointer; outline: none; transition: border-color 0.2s;
+  }
+  .setting-group select:focus { border-color: var(--accent); }
+
+  /* GAME */
+  .game-container { max-width: 720px; margin: 0 auto; padding: 12px 14px 50px; }
+  .status-bar { background: white; border-radius: var(--radius); padding: 12px 18px; margin-bottom: 14px; box-shadow: var(--shadow); text-align: center; }
+  .status-msg { font-size: 16px; font-weight: 800; color: #334155; }
+
+  /* ONE-BY-ONE */
+  .single-stage { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .progress-dots { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #e2e8f0; transition: all 0.2s; flex-shrink: 0; }
+  .dot.done-correct { background: #22c55e; }
+  .dot.done-wrong   { background: #ef4444; }
+  .dot.current      { background: var(--accent); transform: scale(1.35); }
+
+  .big-item-card {
+    width: 120px; height: 120px; border-radius: 22px; background: white;
+    border: 3px solid #e9d5ff; box-shadow: 0 6px 24px rgba(168,85,247,0.15);
+    display: flex; align-items: center; justify-content: center; font-size: 64px;
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
+  }
+  .big-item-card svg.shape { width: 76px; height: 76px; }
+  .big-item-card svg.shape.large { width: 96px; height: 96px; }
+
+  /* ALL-AT-ONCE */
+  .items-section { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 14px; }
+  .section-label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 10px; }
+  .items-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 80px; }
+
+  .item-card {
+    width: var(--cell); height: var(--cell); border-radius: 16px; background: white;
+    border: 3px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, opacity 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07); flex-shrink: 0; position: relative; touch-action: none;
+  }
+  .item-card:hover { transform: scale(1.08); border-color: var(--accent); box-shadow: 0 6px 18px rgba(168,85,247,0.2); }
+  .item-card.dragging { opacity: 0.3; transform: scale(0.95); cursor: grabbing; }
+  .item-card.placed   { opacity: 0.28; pointer-events: none; border-style: dashed; }
+  .item-card.animate-in { animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+
+  svg.shape { width: 44px; height: 44px; display: block; }
+  svg.shape.large { width: 58px; height: 58px; }
+
+  /* BASKETS */
+  .baskets-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .basket {
+    flex: 1 1 130px; max-width: 200px; min-height: 120px; border-radius: var(--radius);
+    border: 3px dashed #cbd5e1; background: #f8fafc;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 8px; gap: 6px; transition: all 0.2s;
+  }
+  .basket.drag-over { border-color: var(--accent); background: #fdf4ff; transform: scale(1.02); box-shadow: 0 0 0 4px rgba(168,85,247,0.12); }
+  .basket.highlight  { border-color: var(--accent); border-style: solid; background: #fdf4ff; }
+  .basket.clickable  { cursor: pointer; }
+  .basket.clickable:hover { border-color: var(--accent); background: #fdf4ff; transform: scale(1.02); }
+
+  .basket-label {
+    font-size: 13px; font-weight: 900; color: #475569; text-align: center;
+    padding: 4px 10px; border-radius: 50px; background: white;
+    border: 2px solid #e2e8f0; white-space: nowrap; flex-shrink: 0;
+  }
+  .basket-items { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: 100%; }
+
+  .basket-item {
+    width: 54px; height: 54px; border-radius: 12px; background: white;
+    border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; transition: all 0.18s; cursor: pointer;
+    animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .basket-item svg.shape { width: 32px; height: 32px; }
+  .basket-item svg.shape.large { width: 42px; height: 42px; }
+  .basket-item:hover { transform: scale(1.1); border-color: #ef4444; }
+  .basket-item.correct { border-color: #22c55e !important; background: #dcfce7 !important; animation: celebrate 0.4s ease; }
+  .basket-item.wrong   { border-color: #ef4444 !important; background: #fee2e2 !important; animation: shake 0.4s ease; }
+
+  /* DRAG GHOST */
+  #drag-ghost {
+    position: fixed; pointer-events: none; z-index: 999;
+    width: var(--cell); height: var(--cell); border-radius: 16px; background: white;
+    border: 3px solid var(--accent); box-shadow: 0 8px 28px rgba(168,85,247,0.35);
+    display: none; align-items: center; justify-content: center;
+    font-size: 40px; opacity: 0.9; transform: scale(1.12);
+  }
+
+  /* RESULT */
+  .result-banner { background: white; border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); margin-bottom: 14px; display: none; }
+  .result-banner.show { display: block; animation: slideDown 0.3s ease; }
+  .result-text { font-size: 21px; font-weight: 900; color: #334155; margin-bottom: 4px; }
+  .result-sub  { font-size: 14px; font-weight: 600; color: #64748b; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+    padding: 12px 26px; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.14); }
+  .btn:active { transform: translateY(0); }
+  .btn-start { background: linear-gradient(135deg, #a855f7, #6366f1); color: white; }
+  .btn-check { background: linear-gradient(135deg, #22c55e, #4ecdc4); color: white; }
+  .btn-clear { background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; }
+  .btn-next  { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; }
+
+  @keyframes popIn     { 0%{transform:scale(0.4);opacity:0} 100%{transform:scale(1);opacity:1} }
+  @keyframes celebrate { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2) rotate(5deg)} }
+  @keyframes shake     { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  .star { position: fixed; pointer-events: none; font-size: 22px; animation: floatStar 1.4s ease-out forwards; z-index: 200; }
+  @keyframes floatStar { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.5)} }
+
+  @media (max-width: 480px) {
+    :root { --cell: 66px; }
+    .item-card { font-size: 34px; border-radius: 14px; }
+    .big-item-card { width: 100px; height: 100px; font-size: 54px; }
+    .big-item-card svg.shape { width: 64px; height: 64px; }
+    .basket-item { width: 46px; height: 46px; font-size: 24px; }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- back-btn -->
+<style>
+.back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 50px;
+  padding: 8px 16px 8px 12px;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #333;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.back-btn:hover {
+  transform: translateX(-3px);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+}
+</style>
+<a class="back-btn" href="../index.html">← Vissza</a>
+
+
+<header>
+  <div class="logo">🗂️ Kategorizáló</div>
+  <div class="subtitle">Tedd a megfelelő helyre!</div>
+</header>
+
+<div class="top-bar">
+  <button class="settings-toggle-btn" onclick="toggleSettings()">⚙️ Beállítások</button>
+</div>
+
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Megjelenítés</label>
+      <select id="display-mode">
+        <option value="onebyone" selected>Egyenként (kattintás)</option>
+        <option value="allatonce">Egyszerre (húzás)</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Elemtípus</label>
+      <select id="elem-type" onchange="updateElemType()">
+        <option value="emoji" selected>Emoji (állat, növény, jármű)</option>
+        <option value="shape">Formák (szín, alak, stílus)</option>
+      </select>
+    </div>
+    <div class="setting-group" id="emoji-mode-group">
+      <label>Kategóriák</label>
+      <select id="emoji-mode">
+        <option value="animals-plants">Állat vs Növény</option>
+        <option value="animals-vehicles">Állat vs Jármű</option>
+        <option value="plants-vehicles">Növény vs Jármű</option>
+        <option value="all3" selected>Mind a három</option>
+      </select>
+    </div>
+    <div class="setting-group hidden" id="shape-mode-group">
+      <label>Kategóriák</label>
+      <select id="shape-mode">
+        <option value="color" selected>Szín szerint</option>
+        <option value="shape">Forma szerint</option>
+        <option value="size">Stílus szerint</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <label>Elemek száma</label>
+      <select id="item-count">
+        <option value="4">4</option>
+        <option value="6" selected>6</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+        <option value="12">12</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="game-container">
+
+  <div class="status-bar">
+    <div class="status-msg" id="status-msg">Nyomj a Start gombra!</div>
+  </div>
+
+  <div class="single-stage hidden" id="single-stage">
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="big-item-card" id="big-item-card"></div>
+  </div>
+
+  <div class="items-section hidden" id="items-section">
+    <div class="section-label">Húzd a kosárba!</div>
+    <div class="items-grid" id="items-grid"></div>
+  </div>
+
+  <div class="baskets-row hidden" id="baskets-row"></div>
+
+  <div class="result-banner" id="result-banner">
+    <div class="result-text" id="result-text"></div>
+    <div class="result-sub"  id="result-sub"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-start" id="start-btn" onclick="startGame()">🚀 Start</button>
+    <button class="btn btn-check hidden" id="check-btn" onclick="checkAnswer()">Ellenőrzés</button>
+    <button class="btn btn-clear hidden" id="clear-btn" onclick="clearAnswers()">Töröl</button>
+    <button class="btn btn-next  hidden" id="next-btn"  onclick="startGame()">Következő ▶</button>
+  </div>
+
+</div>
+
+<div id="drag-ghost"></div>
+
+<script>
+// ── DATA ──
+const EMOJI_POOLS = {
+  animals:  ['🐶','🐱','🐰','🦊','🐻','🐼','🐯','🐮','🐷','🐸','🐵','🦁','🐧','🦉','🐺'],
+  plants:   ['🌵','🍄','🌴','🌻','🍁','🍀','🌾','🎋','🌲','🪨'],
+  vehicles: ['🚂','✈️','🚀','🚁','⛵','🚒','🚑','🛸','🚜','🏍'],
+};
+const EMOJI_LABELS = { animals:'Állat', plants:'Növény', vehicles:'Jármű' };
+const EMOJI_ICONS  = { animals:'🐾',   plants:'🌿',    vehicles:'🚦' };
+
+const COLORS = [
+  { id:'red',    hex:'#ef4444', label:'Piros'  },
+  { id:'yellow', hex:'#facc15', label:'Sárga'  },
+  { id:'green',  hex:'#22c55e', label:'Zöld'   },
+  { id:'blue',   hex:'#3b82f6', label:'Kék'    },
+];
+const SHAPES_LIST = [
+  { id:'circle',   label:'Kör'       },
+  { id:'square',   label:'Négyzet'   },
+  { id:'triangle', label:'Háromszög' },
+];
+const SIZES_LIST = [
+  { id:'normal', label:'Normál' },
+  { id:'large',  label:'Nagy'   },
+  { id:'hollow', label:'Lyukas' },
+];
+
+// ── STATE ──
+let gameState = {};
+let settingsOpen = false;
+let dragState = null;
+const ghost = document.getElementById('drag-ghost');
+
+// ── UTILS ──
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
+function pick(a,n){return shuffle(a).slice(0,n);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function setStatus(m){document.getElementById('status-msg').textContent=m;}
+function spawnStars(x,y,n){['⭐','🌟','✨','💫'].slice(0,n).forEach((s,i)=>{const el=document.createElement('div');el.className='star';el.textContent=s;el.style.left=(x+(Math.random()-.5)*70)+'px';el.style.top=(y+(Math.random()-.5)*30)+'px';el.style.animationDelay=(i*0.1)+'s';document.body.appendChild(el);setTimeout(()=>el.remove(),1800);});}
+
+function toggleSettings(){settingsOpen=!settingsOpen;document.getElementById('settings-panel').classList.toggle('open',settingsOpen);}
+function updateElemType(){const e=document.getElementById('elem-type').value==='emoji';document.getElementById('emoji-mode-group').classList.toggle('hidden',!e);document.getElementById('shape-mode-group').classList.toggle('hidden',e);}
+
+// ── SVG ──
+function makeSVG(colorId,shape,size){
+  const hex=COLORS.find(c=>c.id===colorId)?.hex||'#888';
+  const ns='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(ns,'svg');
+  const isLarge=size==='large',isHollow=size==='hollow';
+  svg.setAttribute('viewBox','0 0 48 48');svg.classList.add('shape');
+  if(isLarge)svg.classList.add('large');
+  const sc=isLarge?1.15:1;
+  let el;
+  if(shape==='circle'){el=document.createElementNS(ns,'circle');el.setAttribute('cx','24');el.setAttribute('cy','24');el.setAttribute('r',String(Math.round(20*sc)));}
+  else if(shape==='square'){el=document.createElementNS(ns,'rect');const m=Math.round(4/sc),s=48-m*2;el.setAttribute('x',String(m));el.setAttribute('y',String(m));el.setAttribute('width',String(s));el.setAttribute('height',String(s));el.setAttribute('rx','4');}
+  else{el=document.createElementNS(ns,'polygon');el.setAttribute('points',isLarge?'24,2 46,46 2,46':'24,4 44,44 4,44');}
+  el.setAttribute('fill',hex);el.setAttribute('stroke','rgba(0,0,0,0.10)');el.setAttribute('stroke-width','1.5');
+  svg.appendChild(el);
+  if(isHollow){const h=document.createElementNS(ns,'circle');h.setAttribute('cx','24');h.setAttribute('cy',shape==='triangle'?'31':'24');h.setAttribute('r',shape==='circle'?'9':'8');h.setAttribute('fill','white');svg.appendChild(h);}
+  return svg;
+}
+
+// ── BUILD ITEMS ──
+function buildItems(elemType,emojiMode,shapeMode,count){
+  const items=[];
+  if(elemType==='emoji'){
+    let cats=emojiMode==='animals-plants'?['animals','plants']:emojiMode==='animals-vehicles'?['animals','vehicles']:emojiMode==='plants-vehicles'?['plants','vehicles']:['animals','plants','vehicles'];
+    const perCat=Math.ceil(count/cats.length);
+    cats.forEach(cat=>pick(EMOJI_POOLS[cat],perCat).forEach(e=>items.push({category:cat,render:()=>{const s=document.createElement('span');s.textContent=e;return s;}})));
+  } else {
+    if(shapeMode==='color'){const p=Math.ceil(count/COLORS.length);COLORS.forEach(col=>{for(let i=0;i<p;i++){const sh=rand(SHAPES_LIST).id,sz=rand(SIZES_LIST).id;items.push({category:col.id,render:()=>makeSVG(col.id,sh,sz)});}});}
+    else if(shapeMode==='shape'){const p=Math.ceil(count/SHAPES_LIST.length);SHAPES_LIST.forEach(sh=>{for(let i=0;i<p;i++){const col=rand(COLORS).id,sz=rand(SIZES_LIST).id;items.push({category:sh.id,render:()=>makeSVG(col,sh.id,sz)});}});}
+    else{const p=Math.ceil(count/SIZES_LIST.length);SIZES_LIST.forEach(sz=>{for(let i=0;i<p;i++){const col=rand(COLORS).id,sh=rand(SHAPES_LIST).id;items.push({category:sz.id,render:()=>makeSVG(col,sh,sz.id)});}});}
+  }
+  return shuffle(items).slice(0,count).map((item,i)=>({...item,id:i}));
+}
+
+function getBaskets(elemType,emojiMode,shapeMode){
+  if(elemType==='emoji'){
+    let cats=emojiMode==='animals-plants'?['animals','plants']:emojiMode==='animals-vehicles'?['animals','vehicles']:emojiMode==='plants-vehicles'?['plants','vehicles']:['animals','plants','vehicles'];
+    return cats.map(c=>({id:c,label:EMOJI_LABELS[c],icon:EMOJI_ICONS[c]}));
+  }
+  if(shapeMode==='color') return COLORS.map(c=>({id:c.id,label:c.label,hex:c.hex}));
+  if(shapeMode==='shape') return SHAPES_LIST.map(s=>({id:s.id,label:s.label}));
+  return SIZES_LIST.map(s=>({id:s.id,label:s.label}));
+}
+
+// ── START ──
+function startGame(){
+  const displayMode=document.getElementById('display-mode').value;
+  const elemType=document.getElementById('elem-type').value;
+  const emojiMode=document.getElementById('emoji-mode').value;
+  const shapeMode=document.getElementById('shape-mode').value;
+  const count=parseInt(document.getElementById('item-count').value);
+
+  const items=buildItems(elemType,emojiMode,shapeMode,count);
+  const baskets=getBaskets(elemType,emojiMode,shapeMode);
+
+  gameState={displayMode,elemType,emojiMode,shapeMode,items,baskets,placements:{},phase:'playing',currentIdx:0,results:[]};
+
+  // reset UI
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  document.getElementById('check-btn').classList.add('hidden');
+  document.getElementById('clear-btn').classList.add('hidden');
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('single-stage').classList.add('hidden');
+  document.getElementById('items-section').classList.add('hidden');
+  document.getElementById('start-btn').textContent='🔄 Új játék';
+  document.getElementById('start-btn').classList.remove('hidden');
+  document.getElementById('baskets-row').classList.remove('hidden');
+
+  renderBaskets(baskets,displayMode);
+
+  if(displayMode==='onebyone'){
+    document.getElementById('single-stage').classList.remove('hidden');
+    renderProgressDots(items.length,-1);
+    showNextItem();
+  } else {
+    document.getElementById('items-section').classList.remove('hidden');
+    document.getElementById('check-btn').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.remove('hidden');
+    renderItems(items);
+    setStatus('Húzd az elemeket a megfelelő kosárba!');
+  }
+}
+
+// ── ONE-BY-ONE ──
+function renderProgressDots(total,current){
+  const row=document.getElementById('progress-dots');
+  row.innerHTML='';
+  for(let i=0;i<total;i++){
+    const dot=document.createElement('div');
+    dot.className='dot';
+    if(i<gameState.results.length) dot.classList.add(gameState.results[i].correct?'done-correct':'done-wrong');
+    else if(i===current) dot.classList.add('current');
+    row.appendChild(dot);
+  }
+}
+
+function showNextItem(){
+  const {items,currentIdx}=gameState;
+  if(currentIdx>=items.length){finishOneByOne();return;}
+  renderProgressDots(items.length,currentIdx);
+  const item=items[currentIdx];
+  const card=document.getElementById('big-item-card');
+  card.innerHTML='';
+  void card.offsetWidth; // reflow for animation restart
+  card.appendChild(item.render());
+  setStatus(`${currentIdx+1} / ${items.length} – Válassz kosarat!`);
+  document.querySelectorAll('.basket').forEach(b=>{
+    b.classList.add('clickable');
+    b.onclick=()=>onBasketClick(b.dataset.basketId);
+  });
+}
+
+function onBasketClick(basketId){
+  if(gameState.phase!=='playing') return;
+  const item=gameState.items[gameState.currentIdx];
+  const correct=basketId===item.category;
+  gameState.results.push({itemId:item.id,correct});
+
+  const basket=document.querySelector(`.basket[data-basket-id="${basketId}"]`);
+  basket.classList.add('highlight');
+  setTimeout(()=>basket.classList.remove('highlight'),400);
+
+  const bi=document.createElement('div');
+  bi.className='basket-item '+(correct?'correct':'wrong');
+  bi.appendChild(item.render());
+  basket.querySelector('.basket-items').appendChild(bi);
+
+  if(correct){const r=basket.getBoundingClientRect();spawnStars(r.left+r.width/2,r.top+r.height/2,3);}
+
+  gameState.currentIdx++;
+  setTimeout(()=>showNextItem(),350);
+}
+
+function finishOneByOne(){
+  gameState.phase='done';
+  document.querySelectorAll('.basket').forEach(b=>{b.classList.remove('clickable');b.onclick=null;});
+  document.getElementById('big-item-card').innerHTML='';
+  document.getElementById('single-stage').classList.add('hidden');
+  const correct=gameState.results.filter(r=>r.correct).length;
+  showResult(correct,gameState.items.length);
+}
+
+// ── ALL-AT-ONCE ──
+function renderItems(items){
+  const grid=document.getElementById('items-grid');
+  grid.innerHTML='';
+  items.forEach((item,i)=>{
+    const card=document.createElement('div');
+    card.className='item-card animate-in';
+    card.style.animationDelay=(i*0.05)+'s';
+    card.dataset.itemId=item.id;
+    card.appendChild(item.render());
+    setupDrag(card,item);
+    grid.appendChild(card);
+  });
+}
+
+// ── BASKETS ──
+function renderBaskets(baskets,displayMode){
+  const row=document.getElementById('baskets-row');
+  row.innerHTML='';
+  baskets.forEach(basket=>{
+    const el=document.createElement('div');
+    el.className='basket';
+    el.dataset.basketId=basket.id;
+    const label=document.createElement('div');
+    label.className='basket-label';
+    if(basket.hex){const dot=document.createElement('span');dot.style.cssText=`display:inline-block;width:12px;height:12px;border-radius:50%;background:${basket.hex};margin-right:5px;vertical-align:middle;border:1px solid rgba(0,0,0,0.1)`;label.appendChild(dot);}
+    else if(basket.icon){label.textContent=basket.icon+' ';}
+    label.appendChild(document.createTextNode(basket.label));
+    el.appendChild(label);
+    const itemsDiv=document.createElement('div');
+    itemsDiv.className='basket-items';
+    itemsDiv.dataset.basketId=basket.id;
+    el.appendChild(itemsDiv);
+    row.appendChild(el);
+  });
+}
+
+// ── DRAG ──
+function setupDrag(card,item){
+  card.addEventListener('mousedown',e=>startDrag(e,card,item,false));
+  card.addEventListener('touchstart',e=>startDrag(e,card,item,true),{passive:false});
+}
+
+function startDrag(e,card,item,isTouch){
+  if(gameState.phase!=='playing') return;
+  if(isTouch) e.preventDefault();
+  const cx=isTouch?e.touches[0].clientX:e.clientX;
+  const cy=isTouch?e.touches[0].clientY:e.clientY;
+  dragState={item,card};
+  card.classList.add('dragging');
+  ghost.innerHTML='';ghost.appendChild(item.render());ghost.style.display='flex';
+  moveGhost(cx,cy);
+  if(!isTouch){document.addEventListener('mousemove',onMouseMove);document.addEventListener('mouseup',onMouseUp);}
+  else{document.addEventListener('touchmove',onTouchMove,{passive:false});document.addEventListener('touchend',onTouchEnd);}
+}
+
+function moveGhost(x,y){const hw=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell'));ghost.style.left=(x-hw/2)+'px';ghost.style.top=(y-hw/2)+'px';}
+function onMouseMove(e){moveGhost(e.clientX,e.clientY);hlBasket(e.clientX,e.clientY);}
+function onTouchMove(e){e.preventDefault();const t=e.touches[0];moveGhost(t.clientX,t.clientY);hlBasket(t.clientX,t.clientY);}
+function hlBasket(x,y){document.querySelectorAll('.basket').forEach(b=>b.classList.remove('drag-over'));const el=document.elementFromPoint(x,y);const b=el?.closest('.basket');if(b)b.classList.add('drag-over');}
+function onMouseUp(e){endDrag(e.clientX,e.clientY);document.removeEventListener('mousemove',onMouseMove);document.removeEventListener('mouseup',onMouseUp);}
+function onTouchEnd(e){const t=e.changedTouches[0];endDrag(t.clientX,t.clientY);document.removeEventListener('touchmove',onTouchMove);document.removeEventListener('touchend',onTouchEnd);}
+
+function endDrag(x,y){
+  ghost.style.display='none';
+  document.querySelectorAll('.basket').forEach(b=>b.classList.remove('drag-over'));
+  if(!dragState) return;
+  const {item,card}=dragState;dragState=null;
+  card.classList.remove('dragging');
+  const el=document.elementFromPoint(x,y);
+  const basket=el?.closest('.basket');
+  if(!basket) return;
+  placeItem(item,basket.dataset.basketId,card,basket);
+}
+
+function placeItem(item,basketId,card,basketEl){
+  if(gameState.placements[item.id]!==undefined){
+    const old=document.querySelector(`.basket-items [data-item-id="${item.id}"]`);
+    if(old) old.remove();
+  }
+  gameState.placements[item.id]=basketId;
+  card.classList.add('placed');
+  const bi=document.createElement('div');
+  bi.className='basket-item';bi.dataset.itemId=item.id;
+  bi.appendChild(item.render());
+  bi.addEventListener('click',()=>{if(gameState.phase!=='playing')return;delete gameState.placements[item.id];bi.remove();card.classList.remove('placed');updateStatus();});
+  basketEl.querySelector('.basket-items').appendChild(bi);
+  updateStatus();
+}
+
+function updateStatus(){
+  const placed=Object.keys(gameState.placements).length,total=gameState.items.length;
+  if(placed===total) setStatus('Minden elem elhelyezve! Nyomj Ellenőrzésre!');
+  else setStatus(`${placed} / ${total} elem elhelyezve`);
+}
+
+function clearAnswers(){
+  gameState.placements={};
+  document.querySelectorAll('.basket-items').forEach(d=>d.innerHTML='');
+  document.querySelectorAll('.item-card').forEach(c=>c.classList.remove('placed'));
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('result-banner').classList.remove('show');
+  setStatus('Húzd az elemeket a megfelelő kosárba!');
+}
+
+function checkAnswer(){
+  if(gameState.phase!=='playing') return;
+  gameState.phase='done';
+  let correct=0;
+  gameState.items.forEach(item=>{
+    const placed=gameState.placements[item.id];
+    const bi=document.querySelector(`.basket-items [data-item-id="${item.id}"]`);
+    if(placed===item.category){correct++;if(bi){bi.classList.add('correct');const r=bi.getBoundingClientRect();setTimeout(()=>spawnStars(r.left+r.width/2,r.top,2),Math.random()*300);}}
+    else{if(bi)bi.classList.add('wrong');const c=document.querySelector(`.item-card[data-item-id="${item.id}"]`);if(c){c.classList.remove('placed');c.style.opacity='1';c.style.borderColor='#ef4444';}}
+  });
+  document.getElementById('check-btn').classList.add('hidden');
+  document.getElementById('clear-btn').classList.add('hidden');
+  showResult(correct,gameState.items.length);
+}
+
+function showResult(correct,total){
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('start-btn').classList.add('hidden');
+  const icon=correct===total?'🎉':correct>=Math.ceil(total*0.6)?'👍':'🙈';
+  const text=correct===total?'Tökéletes! Mindent jól raktál!':correct>=Math.ceil(total*0.6)?'Szép munka!':'Próbáld újra!';
+  const sub=correct===total?`${correct}/${total} – Bravo!`:correct>=Math.ceil(total*0.6)?`${correct}/${total} helyes!`:`${correct}/${total} – piros = rossz kosár`;
+  setStatus(icon+' '+text);
+  document.getElementById('result-text').textContent=icon+' '+text;
+  document.getElementById('result-sub').textContent=sub;
+  const banner=document.getElementById('result-banner');
+  banner.style.display='block';banner.classList.add('show');
+}
+</script>
+</body>
+</html>
