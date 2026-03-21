@@ -1,6 +1,84 @@
 {
   "categories": [
     {
+      "id": "figyelem",
+      "name": "Vizuális figyelem",
+      "emoji": "👁️",
+      "color": "#DC2626",
+      "games": [
+        {
+          "id": "rejtett-abra",
+          "title": "Rejtett Ábra",
+          "subtitle": "Találd meg az elrejtett alakzatot!",
+          "file": "games/rejtett_abra.html",
+          "emoji": "🔍"
+        },
+        {
+          "id": "forma-parosito",
+          "title": "Forma Párosító",
+          "subtitle": "Párosítsd össze az egyező formákat!",
+          "file": "games/forma_parosito_v2.html",
+          "emoji": "🔷"
+        },
+        {
+          "id": "kepparosito",
+          "title": "Képpárosító",
+          "subtitle": "Keresd meg az egyező képeket!",
+          "file": "games/parosito_jatek.html",
+          "emoji": "🖼️"
+        },
+        {
+          "id": "parkereso",
+          "title": "Párkereső",
+          "subtitle": "Találd meg az összetartozó párokat!",
+          "file": "games/parkereso.html",
+          "emoji": "🔎"
+        },
+        {
+          "id": "melyik-nem-illik",
+          "title": "Melyik nem illik?",
+          "subtitle": "Találd meg a csoportból kilógó elemet!",
+          "file": "games/melyik_nem_illik.html",
+          "emoji": "❓"
+        },
+        {
+          "id": "kategorizalo",
+          "title": "Kategorizáló",
+          "subtitle": "Rendezd a tárgyakat a megfelelő csoportba!",
+          "file": "games/kategorizalo.html",
+          "emoji": "🗂️"
+        },
+        {
+          "id": "sorozat-emoji",
+          "title": "Sorozat Kirakós – Képes",
+          "subtitle": "Folytasd a képes sorozatot!",
+          "file": "games/sorozat_emoji.html",
+          "emoji": "🖼️"
+        },
+        {
+          "id": "sorozat-jatek",
+          "title": "Sorozat Kirakós",
+          "subtitle": "Folytasd a logikai sorozatot!",
+          "file": "games/sorozat_jatek.html",
+          "emoji": "🔢"
+        },
+        {
+          "id": "szamolj-gyorsan",
+          "title": "Számolj Gyorsan!",
+          "subtitle": "Számold meg villámgyorsan!",
+          "file": "games/szamolj_gyorsan.html",
+          "emoji": "⚡"
+        },
+        {
+          "id": "utvonal-memoria",
+          "title": "Útvonal Memória",
+          "subtitle": "Jegyezd meg és ismételd meg az útvonalat!",
+          "file": "games/utvonal_memoria.html",
+          "emoji": "🧠"
+        }
+      ]
+    },
+    {
       "id": "memoria",
       "name": "Vizuális emlékezet",
       "emoji": "🧠",
@@ -14,12 +92,112 @@
           "emoji": "🃏"
         },
         {
-  "id": "geometria-memoria",
-  "title": "Geometria memória",
-  "subtitle": "Párosítsd az alakokat emlékezetből!",
-  "file": "games/geometria_memoria.html",
-  "emoji": "🔺"
-}
+          "id": "geometria-memoria",
+          "title": "Geometria Memória",
+          "subtitle": "Párosítsd az alakokat emlékezetből!",
+          "file": "games/geometria_memoria.html",
+          "emoji": "🔺"
+        },
+        {
+          "id": "memory-game",
+          "title": "Emlékező Játék",
+          "subtitle": "Jegyezd meg és idézd vissza a sorrendet!",
+          "file": "games/memory_game.html",
+          "emoji": "💡"
+        },
+        {
+          "id": "mi-valtozott",
+          "title": "Mi változott?",
+          "subtitle": "Vedd észre, mi változott a képen!",
+          "file": "games/mi_valtozott.html",
+          "emoji": "🔄"
+        },
+        {
+          "id": "nback",
+          "title": "N-Back",
+          "subtitle": "Emlékezz vissza az N lépéssel korábbira!",
+          "file": "games/nback.html",
+          "emoji": "🎯"
+        }
+      ]
+    },
+    {
+      "id": "logika",
+      "name": "Logika & gondolkodás",
+      "emoji": "🧩",
+      "color": "#0369A1",
+      "games": [
+        {
+          "id": "sudoku-ovodas",
+          "title": "Sudoku Óvodásoknak",
+          "subtitle": "Egyszerű sudoku képekkel és színekkel!",
+          "file": "games/sudoku_ovodas.html",
+          "emoji": "🌈"
+        },
+        {
+          "id": "sudoku-szamos",
+          "title": "Sudoku – Számos",
+          "subtitle": "Töltsd ki a rácsot 1–4-es számokkal!",
+          "file": "games/sudoku_szamos.html",
+          "emoji": "🔢"
+        },
+        {
+          "id": "sudoku-nehez",
+          "title": "Sudoku – Nehezebb",
+          "subtitle": "Klasszikus sudoku nagyobb ráccsal!",
+          "file": "games/sudoku_nehez.html",
+          "emoji": "🧠"
+        }
+      ]
+    },
+    {
+      "id": "teri",
+      "name": "Téri tájékozódás",
+      "emoji": "🗺️",
+      "color": "#0F766E",
+      "games": [
+        {
+          "id": "utvonal-masolas",
+          "title": "Útvonal másolás",
+          "subtitle": "Másold le a bemutatott útvonalat!",
+          "file": "games/utvonal_masolas_v2.html",
+          "emoji": "📋"
+        },
+        {
+          "id": "formamasolas",
+          "title": "Formamásolás",
+          "subtitle": "Másold le a rácsra rajzolt formát!",
+          "file": "games/formamasolas.html",
+          "emoji": "✏️"
+        },
+        {
+          "id": "tukrezes",
+          "title": "Tükrözős játék",
+          "subtitle": "Rajzold meg az alakzat tükörképét!",
+          "file": "games/tukrezes.html",
+          "emoji": "🪞"
+        },
+        {
+          "id": "labirintus",
+          "title": "Labirintus",
+          "subtitle": "Találd meg a kijáratot a labirintusból!",
+          "file": "games/labirintus.html",
+          "emoji": "🌀"
+        },
+        {
+          "id": "teri-tajekozodas",
+          "title": "Téri tájékozódás",
+          "subtitle": "Navigálj a rácson, becsüld a távolságot!",
+          "file": "games/teri_tajekozodas.html",
+          "emoji": "🧭"
+        },
+        {
+          "id": "utvonal-jatek",
+          "title": "Útvonal játék",
+          "subtitle": "Rajzold meg az útvonalat a rácson!",
+          "file": "games/utvonal_jatek.html",
+          "emoji": "🗺️"
+        }
       ]
     },
     {
